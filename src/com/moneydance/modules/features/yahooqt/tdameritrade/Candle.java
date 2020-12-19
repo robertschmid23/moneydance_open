@@ -8,6 +8,20 @@ public class Candle
 	public double close;
 	public long volume;
 	public long datetime;
+	
+	public Candle()
+	{
+	}
+	
+	public Candle(double open, double high, double low, double close, long volume, long datetime)
+	{
+		this.open = open;
+		this.high = high;
+		this.low = low;
+		this.close = close;
+		this.volume = volume;
+		this.datetime = datetime;
+	}
 }
 //	{
 //		"candles": [

@@ -1,22 +1,13 @@
 package com.moneydance.modules.features.yahooqt;
 
 import com.google.gson.Gson;
-import com.infinitekind.moneydance.model.Account;
-import com.infinitekind.moneydance.model.AccountBook;
-import com.infinitekind.util.StringUtils;
-import com.moneydance.awt.GridC;
-import com.moneydance.awt.JLinkLabel;
-import com.moneydance.awt.JTextPanel;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.moneydance.modules.features.yahooqt.tdameritrade.History;
+import com.moneydance.modules.features.yahooqt.tdameritrade.Quote;
 import static java.lang.Thread.sleep;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
-import java.awt.GridBagLayout;
-import java.awt.event.ActionEvent;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -24,9 +15,15 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -43,14 +40,30 @@ public class TDAmeritradeConnection extends APIKeyConnection
 {
 	private static final SimpleDateFormat SNAPSHOT_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 	
-	public static final String PREFS_KEY = "tdameritrade";
+	private static final String PREFS_KEY = "tdameritrade";
 	private SimpleDateFormat refreshDateFmt;
 	
 	//TDAmeritrade limits all non-order related requests to 120 per minute.
 	private int BURST_RATE_PER_MINUTE = 120;
 	
-	private static String apiKey = "";
+//	private static String apiKey = "";
 	private static String HISTORY_URL = "https://api.tdameritrade.com/v1/marketdata/%s/pricehistory?apikey=%s&periodType=month&period=1&frequencyType=daily";
+	private static String CURRENT_QUOTES_URL = "https://api.tdameritrade.com/v1/marketdata/quotes?apikey=%s&symbol=%s";
+	
+	private List<DownloadInfo> remainingToUpdate;
+	private int requestsRemaining = BURST_RATE_PER_MINUTE;
+
+	//	String allSymbols = String.join(",", list);
+	
+	private static HttpClient client = HttpClient.newBuilder()
+													.version(HttpClient.Version.HTTP_2)
+													.build();
+	
+	private Type quoteMapType = new TypeToken<Map<String, Quote>>(){}.getType();
+	
+	private Gson gson = new GsonBuilder()
+//			.registerTypeAdapter(quoteMapType, new StringQuoteDeserializer())
+			.create();
 	
 	public TDAmeritradeConnection(StockQuotesModel model)
 	{
@@ -59,107 +72,16 @@ public class TDAmeritradeConnection extends APIKeyConnection
 		refreshDateFmt.setLenient(true);
 	}
 	
-	private static String cachedAPIKey = null;
-	private static long suppressAPIKeyRequestUntilTime = 0;
-	
-	private List<DownloadInfo> remainingToUpdate;
-	
-	public String getAPIKey(final StockQuotesModel model, final boolean evenIfAlreadySet)
+	@Override
+	protected String getPrefsKeyRoot()
 	{
-		if (!evenIfAlreadySet && cachedAPIKey != null) return cachedAPIKey;
-		
-		if (model == null) return null;
-		
-		AccountBook book = model.getBook();
-		if (book == null) return null;
-		
-		final Account root = book.getRootAccount();
-		String apiKey = root.getParameter("tdameritrade.apikey",
-										  model.getPreferences().getSetting("tdameritrade_apikey", null));
-		if (!evenIfAlreadySet && !StringUtils.isBlank(apiKey))
-		{
-			return apiKey;
-		}
-		
-		if (!evenIfAlreadySet && suppressAPIKeyRequestUntilTime > System.currentTimeMillis())
-		{ // further requests for the key have been suppressed
-			return null;
-		}
-		
-		final String existingAPIKey = apiKey;
-		Runnable uiActions = new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				JPanel p = new JPanel(new GridBagLayout());
-				AbstractAction signupAction = new AbstractAction()
-				{
-					@Override
-					public void actionPerformed(ActionEvent e)
-					{
-						model.showURL("https://developer.tdameritrade.com/content/getting-started");
-					}
-				};
-				String defaultAPIKey = existingAPIKey != null ? existingAPIKey : "";
-				signupAction.putValue(Action.NAME, model.getResources().getString("tdameritrade.apikey_action"));
-				JLinkLabel linkButton = new JLinkLabel(signupAction);
-				p.add(new JTextPanel(model.getResources().getString("tdameritrade.apikey_msg")),
-					  GridC.getc(0, 0).wxy(1, 1));
-				p.add(linkButton,
-					  GridC.getc(0, 1).center().insets(12, 16, 0, 16));
-				while (true)
-				{
-					String inputString = JOptionPane.showInputDialog(null, p, defaultAPIKey);
-					if (inputString == null)
-					{ // the user canceled the prompt, so let's not ask again for 5 minutes unless this prompt was forced
-						if (!evenIfAlreadySet)
-						{
-							suppressAPIKeyRequestUntilTime = System.currentTimeMillis() + 1000 * 60 * 5;
-						}
-						return;
-					}
-					
-					if (!SQUtil.isEmpty(inputString) && !inputString.equals(JOptionPane.UNINITIALIZED_VALUE))
-					{
-						root.setParameter("tdameritrade.apikey", inputString);
-						model.getPreferences().setSetting("tdameritrade_apikey", inputString);
-						root.syncItem();
-						cachedAPIKey = inputString;
-						return;
-					}
-					else
-					{
-						// the user left the field blank or entered an invalid key
-						model.getGUI().beep();
-					}
-				}
-			}
-		};
-		
-		if (SwingUtilities.isEventDispatchThread())
-		{
-			uiActions.run();
-		}
-		else
-		{
-			try
-			{
-				SwingUtilities.invokeAndWait(uiActions);
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-		return cachedAPIKey;
+		return PREFS_KEY;
 	}
 	
-	
-	public String toString()
+	@Override
+	protected String getGettingStartedURL()
 	{
-		StockQuotesModel model = getModel();
-		return model == null ? "" : model.getResources().getString("tdameritrade");
+		return "https://developer.tdameritrade.com/content/getting-started";
 	}
 	
 	/**
@@ -181,13 +103,14 @@ public class TDAmeritradeConnection extends APIKeyConnection
 		return new URI(uriStr);
 	}
 	
-//	int processors = Runtime.getRuntime().availableProcessors();
-//	ExecutorService executorService = Executors.newFixedThreadPool(processors);
-	
-	HttpClient client = HttpClient.newBuilder()
-//			.executor(executorService)
-			.version(HttpClient.Version.HTTP_2)
-			.build();
+	private URI getTodaysQuoteURI(List<DownloadInfo> securitiesToUpdate) throws URISyntaxException
+	{
+		List<String> symbols = securitiesToUpdate.stream().map(di -> di.fullTickerSymbol).collect(Collectors.toList());
+		String joinedSymbols = String.join(",", symbols);
+		String apiKey = getAPIKey(getModel(), false);
+		
+		return new URI(String.format(CURRENT_QUOTES_URL, apiKey, joinedSymbols));
+	}
 	
 	@Override
 	public boolean updateSecurities(List<DownloadInfo> securitiesToUpdate)
@@ -196,7 +119,6 @@ public class TDAmeritradeConnection extends APIKeyConnection
 		float progressPercent = 0.0f;
 		final float progressIncrement = securitiesToUpdate.isEmpty() ? 1.0f :
 				100.0f / (float)securitiesToUpdate.size();
-		boolean success = true;
 		
 		this.remainingToUpdate = new ArrayList<>(securitiesToUpdate);
 		List<DownloadInfo> retry = new ArrayList<>();
@@ -222,14 +144,10 @@ public class TDAmeritradeConnection extends APIKeyConnection
 						message = MessageFormat.format(res.getString(L10NStockQuotes.ERROR_EXCHANGE_RATE_FMT),
 													   downloadInfo.security.getIDString(),
 													   downloadInfo.relativeCurrency.getIDString());
-						logMessage = MessageFormat.format("Unable to get rate from {0} to {1}",
-														  downloadInfo.security.getIDString(),
-														  downloadInfo.relativeCurrency.getIDString());
 					}
 					else
 					{
 						message = downloadInfo.buildPriceDisplayText(model);
-						logMessage = downloadInfo.buildPriceLogText(model);
 					}
 					model.showProgress(progressPercent, message);
 					didUpdateItem(downloadInfo);
@@ -240,28 +158,18 @@ public class TDAmeritradeConnection extends APIKeyConnection
 			remaining = this.remainingToUpdate.size();
 			completedCount = original - remaining;
 			System.out.println(String.format("Updated %d quotes out of %d", completedCount, original));
-			
-			if (remaining > 0 && requests > 119)
-			{
-				try
-				{
-					System.out.println("WAIT: 1 minute");
-					sleep(60000);
-				}
-				catch (InterruptedException e)
-				{
-					e.printStackTrace();
-				}
-			}
 		}
 		while (remaining > 0 && completedCount > 0);
+		
+		getTodaysQuote(securitiesToUpdate);
+		
 		return true;
 	}
 	
 	private List<DownloadInfo> updateSecurities()
 	{
 		int count = Math.min(BURST_RATE_PER_MINUTE, remainingToUpdate.size());
-		System.out.println(String.format("Updates %d quotes out of %d", count, remainingToUpdate.size()));
+		System.out.println(String.format("Updating %d quotes out of %d", count, remainingToUpdate.size()));
 		
 		return this.remainingToUpdate.stream()
 										.map(this::updateOneSecurity)
@@ -269,33 +177,97 @@ public class TDAmeritradeConnection extends APIKeyConnection
 										.collect(Collectors.toList());
 	}
 	
-	@Override
-	protected void updateSecurity(DownloadInfo downloadInfo)
+	private void checkRequestsRemaining()
 	{
-		//don't use this one
+		if (requestsRemaining <= 0)
+		{
+			try
+			{
+				System.out.println("WAIT: 1 minute");
+				sleep(60000);
+			}
+			catch (InterruptedException e)
+			{
+				e.printStackTrace();
+			}
+			requestsRemaining = BURST_RATE_PER_MINUTE;
+		}
 	}
 	
+	private void getTodaysQuote(List<DownloadInfo> securitiesToUpdate)
+	{
+		CompletableFuture<Map<String, Quote>> future = null;
+		try
+		{
+			URI uri = getTodaysQuoteURI(securitiesToUpdate);
+			checkRequestsRemaining();
+			
+			future = client.sendAsync(HttpRequest.newBuilder(uri).GET().build(),
+									HttpResponse.BodyHandlers.ofString())
+						.thenApply(response -> {
+							System.out.println("Today's Quotes:\n" + response.body());
+							
+							// 1. JSON file to Java object
+							Type mapType =  TypeToken.getParameterized(HashMap.class, String.class, Quote.class).getType();
+							return gson.fromJson(response.body(), mapType);
+						});
+			requestsRemaining--;
+		}
+		catch (URISyntaxException e)
+		{
+			e.printStackTrace();
+		}
+		
+		try
+		{
+			Map<String, Quote> quoteMap = future.get();
+			securitiesToUpdate.forEach ( (stock) ->
+					{
+						if (quoteMap.containsKey(stock.fullTickerSymbol))
+						{
+							Quote q = quoteMap.get(stock.fullTickerSymbol);
+							ZoneOffset zo = ZoneId.systemDefault().getRules().getOffset(Instant.now());
+							long start = LocalDate.now().atStartOfDay().toInstant(zo).toEpochMilli();
+							q.quoteTimeInLong = start;
+							stock.addDayOfData(q.toCandle());
+							stock.buildPriceDisplayText(model);
+						}
+					}
+			);
+		}
+		catch (InterruptedException e)
+		{
+			e.printStackTrace();
+		}
+		catch (ExecutionException e)
+		{
+			e.printStackTrace();
+		}
+	}
+
 	protected DownloadInfo updateOneSecurity(DownloadInfo stock)
 	{
-		if (stock.getHistoryCount() > 0)
-			return stock;
+//		if (stock.getHistoryCount() > 0)
+//			return stock;
 		
 		CompletableFuture<DownloadInfo> di = null;
 		try
 		{
 			URI uri = getHistoryURI(stock.fullTickerSymbol);
-
-			 di = client.sendAsync(HttpRequest.newBuilder(uri).GET().build(),
+			
+			checkRequestsRemaining();
+			
+			di = client.sendAsync(HttpRequest.newBuilder(uri).GET().build(),
 								   HttpResponse.BodyHandlers.ofString())
-					.thenApply(response -> {
-						System.out.println(stock.fullTickerSymbol + ":\n" + response.body());
-						Gson gson = new Gson();
-						
-						// 1. JSON file to Java object
-						History history = gson.fromJson(response.body(), History.class);
-						stock.addHistory(history);
-						return stock;
-					});
+						.thenApply(response -> {
+							System.out.println(stock.fullTickerSymbol + ":\n" + response.body());
+							
+							// 1. JSON file to Java object
+							History history = gson.fromJson(response.body(), History.class);
+							stock.addHistory(history);
+							return stock;
+						});
+			requestsRemaining--;
 		}
 		catch (URISyntaxException uri)
 		{
@@ -317,6 +289,15 @@ public class TDAmeritradeConnection extends APIKeyConnection
 		}
 		
 		return stockReturn;
+	}
+	
+	@Override
+	protected void updateSecurity(DownloadInfo downloadInfo) {/*don't use this one*/ }
+	
+	public String toString()
+	{
+		StockQuotesModel model = getModel();
+		return model == null ? "" : model.getResources().getString("tdameritrade");
 	}
 	
 	public static void main(String[] args)

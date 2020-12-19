@@ -352,7 +352,7 @@ public class DownloadInfo {
 	}
   }
   
-  private void addDayOfData(Candle candle)
+  public void addDayOfData(Candle candle)
   {
   	history.add(new StockRecord(candle, priceMultiplier));
   }
