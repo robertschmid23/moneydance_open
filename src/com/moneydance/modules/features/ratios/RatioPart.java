@@ -12,7 +12,6 @@ package com.moneydance.modules.features.ratios;
 
 import com.infinitekind.moneydance.model.Account;
 import com.infinitekind.moneydance.model.AccountBook;
-import com.infinitekind.moneydance.model.AcctFilter;
 import com.infinitekind.moneydance.model.CurrencyType;
 import com.infinitekind.moneydance.model.CurrencyUtil;
 import com.infinitekind.moneydance.model.DateRange;
@@ -20,10 +19,7 @@ import com.infinitekind.moneydance.model.Txn;
 import com.infinitekind.util.StreamTable;
 import com.infinitekind.util.StringUtils;
 import com.moneydance.apps.md.controller.AccountFilter;
-import com.moneydance.apps.md.view.gui.MoneydanceGUI;
-import com.moneydance.apps.md.view.gui.TagLogic;
-import com.moneydance.apps.md.view.gui.TxnDateSearch;
-import com.moneydance.apps.md.view.gui.TxnTagsSearch;
+import com.moneydance.apps.md.view.gui.*;
 import com.moneydance.apps.md.view.gui.reporttool.GraphReportUtil;
 import com.moneydance.modules.features.ratios.selector.RatioAccountSelector;
 
@@ -37,17 +33,19 @@ import java.util.Map;
  * @author Kevin Menningen
  */
 class RatioPart {
-  private final List<Account> _requiredAccounts = new ArrayList<Account>();
-  private final List<Account> _disallowedAccounts = new ArrayList<Account>();
-  private final List<String> _tags = new ArrayList<String>();
+  private final List<Account> _requiredAccounts = new ArrayList<>();
+  private final List<Account> _disallowedAccounts = new ArrayList<>();
+  private final List<String> _tags = new ArrayList<>();
   private String _encodedRequiredAccounts;
   private String _encodedDisallowedAccounts;
   private TagLogic _tagLogic;
   private String _label;
   private long _txnValue;
   private TxnDateSearch _dateFilter;
-  private AcctFilter _requiredFilter;
-  private AcctFilter _disallowedFilter;
+//  private AcctFilter _requiredFilter;
+//  private AcctFilter _disallowedFilter;
+  private DefaultAcctSearch _requiredFilter;
+  private DefaultAcctSearch _disallowedFilter;
   private TxnTagsFilter _tagFilter;
   private double _value;
   private TxnMatchLogic _txnMatchLogic = TxnMatchLogic.DEFAULT;
@@ -203,24 +201,48 @@ class RatioPart {
     _baseCurrency = root.getCurrencies().getBaseType();
     _txnValue = 0;
     _dateFilter = new TxnDateSearch(dateRange.getStartDateInt(), dateRange.getEndDateInt(), useTaxDate);
-    _requiredFilter = new AcctFilter() {
-      public boolean matches(Account account) {
-        return _requiredAccounts.contains(account);
-      }
 
-      public String format(Account account) {
-        return account.getFullAccountName();
-      }
-    };
-    _disallowedFilter = new AcctFilter() {
-      public boolean matches(Account account) {
-        return _disallowedAccounts.contains(account);
-      }
+// ORIGINAL CODE
+//      _requiredFilter = new AcctFilter() {
+//        public boolean matches(Account account) {
+//          return _requiredAccounts.contains(account);
+//        }
+//
+//        public String format(Account account) {
+//          return account.getFullAccountName();
+//        }
+//      };
+//      _disallowedFilter = new AcctFilter() {
+//        public boolean matches(Account account) {
+//          return _disallowedAccounts.contains(account);
+//        }
+//
+//        public String format(Account account) {
+//          return account.getFullAccountName();
+//        }
+//      };
+//
+      // SCB REVISED CODE
+      _requiredFilter = new DefaultAcctSearch() {
+        public boolean matches(Account account) {
+          return _requiredAccounts.contains(account);
+        }
 
-      public String format(Account account) {
-        return account.getFullAccountName();
-      }
-    };
+        public String format(Account account) {
+          return account.getFullAccountName();
+        }
+      };
+
+      _disallowedFilter = new DefaultAcctSearch() {
+        public boolean matches(Account account) {
+          return _disallowedAccounts.contains(account);
+        }
+
+        public String format(Account account) {
+          return account.getFullAccountName();
+        }
+      };
+
     if (!_tags.isEmpty()) {
       _tagFilter = new TxnTagsFilter(_tags, _tagLogic);
     } else {
@@ -256,7 +278,9 @@ class RatioPart {
     final boolean targetRequired = _requiredFilter.matches(targetAccount);
     // if neither match, both accounts are Allowed and we ignore the transaction
     // if both match, both accounts are Required and it's an 'internal' transfer, skip
-    if (!(sourceRequired ^ targetRequired)) return;
+
+    // if (!(sourceRequired ^ targetRequired)) return;
+    if (sourceRequired == targetRequired) return;
     // At this point one account is Required, the other is Allowed
     // Both sides will be visited by the enumeration, we just so happen to pick the target account
     // to get the sign right.
@@ -269,17 +293,16 @@ class RatioPart {
       // transactions are specified in the currency of the source account, not the target account
       final long txnValue = sourceAccount.getCurrencyType().adjustValueForSplitsInt(txnDate, rawValue);
       // convert to the base currency for all calculations
-      final long convertedValue;
-      // we will flip the transaction if the category is the source and the non-category is the
-      // destination
-      if (RatioCompute.shouldFlipTxn(sourceAccount, targetAccount, sourceRequired, targetRequired)) {
-        convertedValue = -CurrencyUtil.convertValue(txnValue, sourceAccount.getCurrencyType(),
-                                                    _baseCurrency, txnDate);
-      } else {
-        convertedValue = CurrencyUtil.convertValue(txnValue, sourceAccount.getCurrencyType(),
-                                                    _baseCurrency, txnDate);
+      long convertedValue;
+
+      // we will flip the transaction if the category is the source and the non-category is the destination
+      convertedValue = CurrencyUtil.convertValue(txnValue, sourceAccount.getCurrencyType(), _baseCurrency, txnDate);
+      boolean flip = (RatioCompute.shouldFlipTxn(sourceAccount, targetAccount, sourceRequired, targetRequired, convertedValue));
+      if (flip) {
+        convertedValue = -convertedValue;
       }
       _txnValue += convertedValue;
+
       if (reporting != null) {
         reporting.addTxn(txn, new TxnReportInfo(convertedValue, sourceRequired, targetRequired));
       }

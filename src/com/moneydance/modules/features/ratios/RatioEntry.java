@@ -17,7 +17,6 @@ import com.infinitekind.moneydance.model.Txn;
 import com.infinitekind.util.StreamTable;
 import com.moneydance.apps.md.controller.AccountFilter;
 import com.moneydance.apps.md.view.gui.MoneydanceGUI;
-import com.moneydance.apps.md.view.gui.TagLogic;
 
 import java.util.List;
 import java.util.Map;
@@ -97,6 +96,14 @@ public class RatioEntry {
     if (!(obj instanceof RatioEntry)) return false;
     RatioEntry other = (RatioEntry)obj;
     return (RatiosUtil.areEqual(_name, other._name) && (_index == other._index));
+  }
+
+  public RatioPart getNumerator() {
+    return _numerator;
+  }
+
+  public RatioPart getDenominator() {
+    return _denominator;
   }
 
   public int hashCode() {

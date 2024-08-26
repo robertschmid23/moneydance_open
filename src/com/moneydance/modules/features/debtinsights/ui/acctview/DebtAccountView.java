@@ -1,13 +1,3 @@
-/*
- * DMDebtAccountView.java
- * 
- * Created on Sep 9, 2013
- * Last Modified: $Date: $
- * Last Modified By: $Author: $
- * 
- * 
- */
-
 package com.moneydance.modules.features.debtinsights.ui.acctview;
 
 import java.util.*;
@@ -15,175 +5,181 @@ import java.util.*;
 import javax.swing.JComponent;
 
 import com.infinitekind.moneydance.model.*;
-import com.moneydance.apps.md.controller.AccountFilter;
 import com.moneydance.apps.md.controller.BalanceType;
 import com.moneydance.apps.md.view.HomePageView;
+import com.moneydance.apps.md.view.gui.DefaultAcctSearch;
 import com.moneydance.apps.md.view.gui.MoneydanceGUI;
-import com.moneydance.apps.md.view.gui.MoneydanceLAF;
-import com.moneydance.apps.md.view.gui.homepage.AccountView;
-import com.moneydance.modules.features.debtinsights.model.DebtAccount;
+import com.moneydance.modules.features.debtinsights.AccountUtils;
+import com.moneydance.modules.features.debtinsights.Main;
+import com.moneydance.modules.features.debtinsights.Util;
 import com.moneydance.modules.features.debtinsights.model.DebtAccountComparator;
-import com.moneydance.modules.features.debtinsights.model.DebtAccountUtils;
+import com.moneydance.modules.features.debtinsights.ui.MyCollapsibleRefresher;
 import com.moneydance.modules.features.debtinsights.ui.viewpanel.DebtViewPanel;
 
-public abstract class DebtAccountView implements HomePageView
-{
-	protected DebtViewPanel	       debtView	             = null;
-	private List<Account.AccountType> acctTypes;
-	protected MoneydanceGUI mdGUI;
-	private HierarchyView hierarchy = HierarchyView.EXPAND_ALL;
-	private DebtAccountComparator acctComparator;
+public abstract class DebtAccountView implements HomePageView {
+    protected DebtViewPanel debtView = null;
+    private List<Account.AccountType> acctTypes;
+    protected MoneydanceGUI mdGUI;
+    private HierarchyView hierarchy = HierarchyView.EXPAND_ALL;
+    private DebtAccountComparator acctComparator;
 
-	public DebtAccountView(MoneydanceGUI mdGUI) //, AccountBook AccountBook)
-	{
-		this.mdGUI = mdGUI;
-	}
+    private final MyCollapsibleRefresher refresher = new MyCollapsibleRefresher(() -> {
+        Util.logConsole(true, "Inside MyCollapsibleRefresher::Runnable.... Calling .reallyRefresh()..");
+        DebtAccountView.this.reallyRefresh();
+    });
 
-	public abstract Account.AccountType getAccountType();
-	
-	public List<Account.AccountType> getAccountTypes()
-	{
-		if (acctTypes == null)
-		{
-			acctTypes = Arrays.asList(getAccountType());
-		}
-		return acctTypes;
-	}
-	
-	public void setAccountTypes(List<Account.AccountType> accountTypes)
-	{
-		this.acctTypes = accountTypes;
-	}
-	
-	public boolean includes(Account.AccountType accountType)
-	{
-		return getAccountTypes().contains(accountType);
-	}
-	
-	public abstract String getBalanceTypePref();
+    public DebtAccountView(MoneydanceGUI mdGUI)
+    {
+        this.mdGUI = mdGUI;
+    }
 
-	public abstract String getSectionExpandedPref();
+    public abstract Account.AccountType getAccountType();
 
-	@Override
-	public JComponent getGUIView(AccountBook AccountBook)
-	{
-		if (this.debtView != null) return this.debtView;
-		synchronized (this)
-		{
-			if (this.debtView == null)
-			{
-				this.debtView = new DebtViewPanel(this, getAccountType());
-				this.debtView.setBorder(MoneydanceLAF.homePageBorder);
-			}
-			return this.debtView;
-		}
-	}
+    public List<Account.AccountType> getAccountTypes() {
+        if (acctTypes == null) {
+            acctTypes = Collections.singletonList(getAccountType());
+        }
+        return acctTypes;
+    }
 
-	public MoneydanceGUI getMDGUI()
-	{
-		return this.mdGUI;
-	}
+    public void setAccountTypes(List<Account.AccountType> accountTypes) {
+        this.acctTypes = accountTypes;
+    }
 
-	@Override
-	public void setActive(boolean active)
-	{
-		if (this.debtView != null) 
-		{
-			if (active)
-				this.debtView.activate();
-			else
-				this.debtView.deactivate();
-		}
-	}
-	
-	@Override
-	public void refresh()
-	{
-		if (this.mdGUI.getSuspendRefreshes() == true) 
-			return;
-		if (this.debtView != null) this.debtView.refresh();
-	}
+    public boolean includes(Account.AccountType accountType) {
+        return getAccountTypes().contains(accountType);
+    }
+
+    public abstract String getBalanceTypePref();
+
+    public abstract String getSectionExpandedPref();
+
+    @Override
+    public JComponent getGUIView(AccountBook book) {
+
+        Util.logConsole(true, "DAV.getGUIView() called (book: " + book + ")");
+        assert false: "I Don't really want to be called at this level!";
+        return null;
+
+//        if (book == null){
+//            return null;
+//        }
+//        if (this.debtView != null) return this.debtView;
+//        synchronized (this) {
+//            if (this.debtView == null) {
+//
+//                this.debtView = new DebtViewPanel(true, this, getAccountType());
+//                this.debtView.setBorder(MoneydanceLAF.homePageBorder);
+//            }
+//            return this.debtView;
+//        }
+    }
+
+    public MoneydanceGUI getMDGUI() {
+        return this.mdGUI;
+    }
+
+    @Override
+    public void setActive(boolean active) {
+        Util.logConsole(true, ".setActive(): " + active);
+        if (this.debtView != null) {
+            if (active)
+                this.debtView.activate();
+            else
+                this.debtView.deactivate();
+        }
+    }
+
+    @Override
+    public void refresh() {
+        Util.logConsole(true, "DAV.refresh()");
+        if (this.mdGUI.getSuspendRefreshes())
+            return;
+
+        if (this.debtView != null) {
+            Util.logConsole(true, "... calling refresher.enqueueRefresh()");
+            this.refresher.enqueueRefresh();
+        }
+    }
+
+    public void reallyRefresh() {
+        Util.logConsole(true, "... Inside DAV.reallyRefresh() - calling debtView.refresh()");
+        if (this.debtView != null) this.debtView.refresh();
+    }
+
+    @Override
+    public synchronized void reset() {
+        Util.logConsole(true, ".reset()");
+        setActive(false);
+        this.debtView = null;
+    }
+
+    public String getBalStr(int balType) {
+        BalanceType type = BalanceType.fromInt(balType);
+        return this.mdGUI.getStr(type.getResourceKey());
+    }
+
+    public HierarchyView getHierarchyView() {
+        return hierarchy;
+    }
 
 
-	public String getBalStr(int balType)
-	{
-		BalanceType type = BalanceType.fromInt(balType);
-		return this.mdGUI.getStr(type.getResourceKey());
-	}
-	
-	@Override
-	public synchronized void reset()
-	{
-		setActive(false);
-		this.debtView = null;
-	}
-	/**
-	 * @return the showHierarchy
-	 */
-	public HierarchyView getHierarchyView()
-	{
-		return hierarchy;
-	}
 
-	
-	/**
-	 * @return the accounts
-	 */
-	public List<Account> getAccounts(Account parentAccount)
-	{	
-		if (parentAccount == null) return null ;
-		
-		List<Account> acctList = AccountUtil.allMatchesForSearch(parentAccount, new AcctFilter() {
-		@Override
-		public boolean matches(Account account) {
-			return getAccountTypes().contains(account.getAccountType());
-		}
-			
-			@Override
-		public String format(Account account) { return account.getFullAccountName(); }
-		});
-		
-		if (acctComparator != null)	{
-			Collections.sort(acctList, acctComparator);
-		}
-		return acctList;
-	}
+    public List<Account> getAccounts(Account parentAccount) {
+        if (parentAccount == null) return null;
 
-	
-	/**
-	 * @param showHierarchy the showHierarchy to set
-	 */
-	public void setHierarchyView(HierarchyView showHierarchy)
+// ORIGINAL CODE
+//        List<Account> acctList = AccountUtil.allMatchesForSearch(Main.getMDMain().getCurrentAccountBook(), new AcctFilter() {
+//
+//            @Override
+//            public boolean matches(Account account) {
+//                return getAccountTypes().contains(account.getAccountType());
+//            }
+//
+//            @Override
+//            public String format(Account account) {
+//                return account.getFullAccountName();
+//            }
+//        });
+
+        // SCB Revised code - The below changed from using AcctFilter() for MD2023.2(5008+ KOTLIN builds) onwards
+        List<Account> acctList = AccountUtil.allMatchesForSearch(Main.getMDMain().getCurrentAccountBook(), new DefaultAcctSearch() {
+
+            @Override
+            public boolean matches(Account account) { return getAccountTypes().contains(account.getAccountType()); }
+
+            @Override
+            public String format(Account account) { return account.getFullAccountName(); }
+        });
+
+
+        if (acctComparator != null) {
+            acctList.sort(acctComparator);
+        }
+        return acctList;
+    }
+
+
+    public void setHierarchyView(HierarchyView showHierarchy) {
+        this.hierarchy = showHierarchy;
+    }
+
+    public void setAcctComparator(DebtAccountComparator acctComparator) {
+        this.acctComparator = acctComparator;
+        Main.lastRefreshTriggerWasAccountListener = false;
+        refresh();
+    }
+
+    public DebtAccountComparator getAcctComparator() {
+        return this.acctComparator;
+    }
+
+
+	public static long getBalance(BalanceType balType, Account acct)
 	{
-		this.hierarchy = showHierarchy;
-	}
-
-	/**
-	 * @param acctComparator the acctComparator to set
-	 */
-	public void setAcctComparator(DebtAccountComparator acctComparator)
-	{
-		this.acctComparator = acctComparator;
-		refresh();
-	}
-
-	/**
-	 * return the acctComparator
-	 */
-	public DebtAccountComparator getAcctComparator()
-	{
-		return this.acctComparator;
-	}
-	
-
-//	public static long getBalance(int balType, Account acct) 
-//	{
+        return AccountUtils.getActiveXBalance(acct, balType);
 //	    if (acct.getAccountOrParentIsInactive()) return 0L;
-//	    
-//	    if (acct instanceof DebtAccount) 
-//	    	acct = ((DebtAccount) acct).getWrappedAccount();
-//	    switch (BalanceType.fromInt(balType)) 
-//	    {
+//	    switch (balType) {
 //	    	case CURRENT_BALANCE:
 //	    		return acct.getUserCurrentBalance();
 //	    	case BALANCE:
@@ -193,23 +189,7 @@ public abstract class DebtAccountView implements HomePageView
 //	    	default:
 //	    		return acct.getUserBalance();
 //	    }
-//    
-//	}
-	
-	public static long getBalance(BalanceType balType, Account acct) 
-	{
-	    if (acct.getAccountOrParentIsInactive()) return 0L;
-	    switch (balType) {
-	    	case CURRENT_BALANCE:
-	    		return acct.getUserCurrentBalance();
-	    	case BALANCE:
-	    		return acct.getBalance();
-	    	case CLEARED_BALANCE:
-	    		return acct.getUserClearedBalance();
-	    	default:
-	    		return acct.getUserBalance();
-	    }
-    
+
   }
 
 }

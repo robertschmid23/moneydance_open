@@ -19,7 +19,6 @@ import com.infinitekind.moneydance.model.DateRange;
 import com.infinitekind.moneydance.model.Txn;
 import com.infinitekind.moneydance.model.TxnIterator;
 import com.moneydance.apps.md.controller.Util;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,7 @@ class RatioCompute {
   public RatioCompute(final AccountBook root, final char decimal) {
     _root = root;
     _decimal = decimal;
-    _balanceCache = new HashMap<Account, BalanceHolder>();
+    _balanceCache = new HashMap<>();
   }
 
   public void computeRatios(final List<RatioEntry> ratios, DateRange dateRange) {
@@ -49,21 +48,98 @@ class RatioCompute {
     computeFinalRatios(ratios);
   }
 
-  static boolean shouldFlipTxn(final Account sourceAccount, final Account targetAccount,
-                               final boolean isSourceRequired, final boolean isTargetRequired) {
-    // if the source is a category and the target isn't, flip
-    final boolean isSourceCategory =
-      (sourceAccount.getAccountType() == Account.AccountType.EXPENSE)
-      || (sourceAccount.getAccountType() == Account.AccountType.INCOME);
+  static boolean shouldFlipTxn(Account sourceAccount, Account targetAccount,
+                               boolean isSourceRequired, boolean isTargetRequired, long amt) {
+
+    boolean flip = false;
+    final boolean isSourceCategory = com.moneydance.modules.features.ratios.Util.isCategory(sourceAccount);
 
     // if the target is a loan account, treat it as an expense category so that the value has the same sign as the interest expense
-    final boolean isTargetCategory = (targetAccount.getAccountType() == Account.AccountType.EXPENSE)
-      || (targetAccount.getAccountType() == Account.AccountType.INCOME)
-      || (targetAccount.getAccountType() == Account.AccountType.LOAN);
-    if (isSourceCategory && !isTargetCategory) return true;
-    // if the source is not a Required account but the target is, flip as long as that doesn't
-    // violate the first clause where the target is a category.
-    return !isSourceRequired && isTargetRequired && !isTargetCategory;
+    final boolean isTargetCategory = (com.moneydance.modules.features.ratios.Util.isCategory(targetAccount)
+            || targetAccount.getAccountType() == Account.AccountType.LOAN);
+
+    // if the source is a category and the target isn't, flip
+    if (isSourceCategory && !isTargetCategory) {
+      //if (Main.DEBUG) {
+      //  System.err.println(String.format("will flip (as: 'isSourceCategory && !isTargetCategory'): amt: %s, src: '%s' (rqd: %s) trg: '%s' (rqd: %s)", amt, sourceAccount, isSourceRequired, targetAccount, isTargetRequired));
+      //}
+      flip = true;
+    }
+
+    if (!flip) {
+      // if the source is not a Required account but the target is, flip as long as that doesn't violate the first clause where the target is a category.
+      flip = (!isSourceRequired && isTargetRequired && !isTargetCategory);
+      if (flip) {
+        //if (Main.DEBUG) {
+        //  System.err.println(String.format("will flip (as: '!isSourceRequired && isTargetRequired && !isTargetCategory'): amt: %s, src: '%s' (rqd: %s) trg: '%s' (rqd: %s)", amt, sourceAccount, isSourceRequired, targetAccount, isTargetRequired));
+        //}
+      }
+    }
+
+    //----
+    // First of all check if we already decided to flip the source/target accounts
+    if (flip) {
+      Account temp;
+      temp = sourceAccount;
+      sourceAccount = targetAccount;
+      targetAccount = temp;
+    }
+
+    Account.AccountType srcAT;
+    switch (sourceAccount.getAccountType()) {
+      case BANK:
+      case ASSET:
+      case INVESTMENT:
+        srcAT = Account.AccountType.BANK;
+        break;
+      case CREDIT_CARD:
+      case LIABILITY:
+      case LOAN:
+        srcAT = Account.AccountType.LIABILITY;
+        break;
+      case EXPENSE:
+        srcAT = Account.AccountType.EXPENSE;
+        break;
+      case INCOME:
+        srcAT = Account.AccountType.INCOME;
+        break;
+      default:
+        srcAT = null;
+    }
+    Account.AccountType trgAT;
+    switch (targetAccount.getAccountType()) {
+      case BANK:
+      case ASSET:
+      case INVESTMENT:
+        trgAT = Account.AccountType.BANK;
+        break;
+      case CREDIT_CARD:
+      case LIABILITY:
+      case LOAN:
+        trgAT = Account.AccountType.LIABILITY;
+        break;
+      case EXPENSE:
+        trgAT = Account.AccountType.EXPENSE;
+        break;
+      case INCOME:
+        trgAT = Account.AccountType.INCOME;
+        break;
+      default:
+        trgAT = null;
+    }
+
+    // todo - add more combinations here...
+    if (srcAT == Account.AccountType.BANK && trgAT == Account.AccountType.LIABILITY) {
+      // no change
+    } else if (srcAT == Account.AccountType.LIABILITY && trgAT == Account.AccountType.BANK) {
+      flip = !flip; // reverse
+      //if (Main.DEBUG) {
+      //  System.err.println(String.format(".. flipping: amt: %s, src: '%s' (type: %s) trg: '%s' (type: %s)", amt, sourceAccount, srcAT, targetAccount, trgAT));
+      //}
+    }
+    //----
+
+    return flip;
   }
 
   static int getDaysInPeriod(DateRange dateRange) {
@@ -236,7 +312,7 @@ class RatioCompute {
     }
     return result;
   }
-  
+
   private BalanceHolder calculateBalancesWithDailyAverage(Account account, Map<Account, BalanceHolder> cache, int[] asOfDates,
                                                           int[] datesToCompute) {
     BalanceHolder result = (cache == null) ? null : cache.get(account);
@@ -292,7 +368,12 @@ class RatioCompute {
     }
     if (noTransactionPartsExist(ratios)) return;
     // setup
-    for (RatioEntry ratio : ratios) ratio.prepareForTxnProcessing(_root, dateRange, true, null);
+    for (RatioEntry ratio : ratios) {
+//       if (Main.DEBUG && ratio.getIndex() == 0) System.err.printf("@@ computeTxnBasedValues(), ratio: %s idx: %s %s %s %s %s %s\n",
+//               ratio, ratio.getIndex(), ratio.getNumerator().getConstant(), ratio.getNumerator().getMatchingLogic(), ratio.getNumerator().getTxnMatchBoth(), ratio.getNumerator().getTxnMatchInto(), ratio.getNumerator().getTxnMatchOutOf());
+//               // ratio.getNumerator().getTxnMatchInto(); TxnMatchLogic.IN
+      ratio.prepareForTxnProcessing(_root, dateRange, true, null);
+    }
     // calculate for each ratio on each matching transaction
     TxnIterator txnIterator = new TxnIterator(_root.getTransactionSet());
     while(txnIterator.hasNext()) {
@@ -340,6 +421,9 @@ class RatioCompute {
   static void computeFinalRatio(RatioEntry ratio) {
     final double numerator = ratio.getNumeratorValue();
     final double denominator = ratio.getDenominatorValue();
+//    if (Main.DEBUG){
+//      System.err.printf("@@ BEFORE: numerator: %s denominator: %s\n", ratio.getNumeratorValue(), ratio.getDenominatorValue());
+//    }
     if (Math.abs(denominator) < MINIMUM_DENOMINATOR) {
       // divide by zero
       ratio.setValue(Double.NaN);
@@ -351,6 +435,9 @@ class RatioCompute {
     } else {
       ratio.setValue(numerator / denominator);
     }
+//    if (Main.DEBUG){
+//      System.err.printf("@@ AFTER: numerator: %s denominator: %s\n", ratio.getNumeratorValue(), ratio.getDenominatorValue());
+//    }
   }
 
 }

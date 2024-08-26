@@ -14,6 +14,8 @@ import java.awt.event.ActionEvent;
 import javax.swing.AbstractAction;
 import javax.swing.Icon;
 
+import com.moneydance.modules.features.debtinsights.Main;
+import com.moneydance.modules.features.debtinsights.Util;
 import com.moneydance.modules.features.debtinsights.ui.viewpanel.CreditCardViewPanel;
 
 
@@ -44,11 +46,13 @@ public class CreditCardLimitMenuAction extends AbstractAction
 	{
 		boolean different = type.ordinal() != this.ccvp.getCreditLimitType().ordinal();
 
-		ccvp.prefs.setSetting(	ccvp.getCcAccountView().creditLimitTypePref,
-								type.ordinal());
-		
+//		ccvp.prefs.setSetting(	ccvp.getCcAccountView().creditLimitTypePref, type.ordinal());
+		ccvp.prefs.setSetting(Main.EXTN_MD_CCLIMIT_PREF_KEY, type.ordinal());
+
 		if (!different) return;
 		ccvp.setCreditLimitType(type);
+		Util.logConsole(true, "@@@ CreditCardLimitMenuAction:: calling .refresh() ??");
+        Main.lastRefreshTriggerWasAccountListener = false;
 		ccvp.refresh();
 	}
 	

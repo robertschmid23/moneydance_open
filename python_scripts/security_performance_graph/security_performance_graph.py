@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-# security_performance_graph.py build: 1005 - Feb 2023 - Stuart Beesley StuWareSoftSystems
+# security_performance_graph.py build: 1014 - July 2024 - Stuart Beesley StuWareSoftSystems
 
 # requires: MD 2021.1(3069) due to NPE on SwingUtilities - something to do with 'theGenerator.setInfo(reportSpec)'
 
 ###############################################################################
 # MIT License
 #
-# Copyright (c) 2021-2023 Stuart Beesley - StuWareSoftSystems
+# Copyright (c) 2020-2024 Stuart Beesley - StuWareSoftSystems
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 ###############################################################################
-# Use in Moneydance Menu Window->Show Moneybot Console >> Open Script >> RUN
+# Use in Moneydance Menu Window->Show Developer Console >> Open Script >> RUN
 
 # build: 1000 - Initial Release: Recreates the internal MD graph engine and create a special security performance report by percentage
 # build: 1001 - Tweaks; Common code; Fixed JTable sorting....
@@ -39,7 +39,24 @@
 # build: 1004 - Tweak init message with time
 # build: 1005 - Added bootstrap to execute compiled version of extension (faster to load)....
 # build: 1005 - Fixed call to save_StuWareSoftSystems_parameters_to_file() without parameters - causing wrong pickle file to be written
+# build: 1006 - Fixes for MD2023.0(5000) Kotlin compiled builds.... Fix SyncRecord().readSet() call.
+# build: 1006 - MD2023 fixes to common code...
+# build: 1007 - Common code tweaks
+# build: 1008 - Cleanup references to MD Objects; Change CurrencyNumberFormat to hold a WeakReference() to CurrencyType...
+# build: 1009 - Common code - FileFilter fix...
+# build: 1010 - Fixed call to .setReportParameters(None) for 5064+ build
+# build: 1011 - Prevent popup jtable column reordering...
+# build: 1012 - jar/class name fixes for MD2024(5100)...
+# build: 1013 - MyJFrame(v5); tweaks to cope with MD2024.2(5141) RepGen changes that impact GrapReportGenerator protected fields
+# build: 1014 - MD2024.2(5142) - moneydance_extension_loader was nuked and moneydance_this_fm with getResourceAsStream() was provided.
+# build: 1014 - Switching to CurrencyUtil.convertValue()
 
+#######
+# NOTE: You cannot access protected fields on a subclassed class from python, only protected methods!
+# https://stackoverflow.com/questions/52823524/access-protected-java-attribute-from-jython
+#######
+
+# todo - hunt down why something retains a reference to MD object..?
 # todo - Memorise (save versions) along with choose/delete etc saved versions
 # todo - add markers for splits, buy/sells
 
@@ -49,14 +66,32 @@
 
 # SET THESE LINES
 myModuleID = u"security_performance_graph"
-version_build = "1005"
+version_build = "1014"
 MIN_BUILD_REQD = 3069
-_I_CAN_RUN_AS_MONEYBOT_SCRIPT = True
+_I_CAN_RUN_AS_DEVELOPER_CONSOLE_SCRIPT = True
 
-if u"debug" in globals():
-    global debug
-else:
-    debug = False
+global moneydance, moneydance_ui, moneydance_extension_loader, moneydance_extension_parameter, moneydance_this_fm
+
+global MD_REF, MD_REF_UI
+if "moneydance" in globals(): MD_REF = moneydance           # Make my own copy of reference as MD removes it once main thread ends.. Don't use/hold on to _data variable
+if "moneydance_ui" in globals(): MD_REF_UI = moneydance_ui  # Necessary as calls to .getUI() will try to load UI if None - we don't want this....
+if "MD_REF" not in globals(): raise Exception("ERROR: 'moneydance' / 'MD_REF' NOT set!?")
+if "MD_REF_UI" not in globals(): raise Exception("ERROR: 'moneydance_ui' / 'MD_REF_UI' NOT set!?")
+
+# Nuke unwanted (direct/indirect) reference(s) to AccountBook etc....
+if "moneydance_data" in globals():
+    moneydance_data = None
+    del moneydance_data
+
+if "moneybot" in globals():
+    moneybot = None
+    del moneybot
+
+from java.lang import Boolean
+global debug
+if "debug" not in globals():
+    # if Moneydance is launched with -d, or this property is set, or extension is being (re)installed with Console open.
+    debug = (False or MD_REF.DEBUG or Boolean.getBoolean("moneydance.debug"))
 
 global security_performance_graph_frame_
 # SET LINES ABOVE ^^^^
@@ -71,14 +106,15 @@ def checkObjectInNameSpace(objectName):
     return objectName in dir(builtins)
 
 
-global moneydance, moneydance_ui, moneydance_extension_loader, moneydance_extension_parameter
-MD_REF = moneydance             # Make my own copy of reference as MD removes it once main thread ends.. Don't use/hold on to _data variable
-MD_REF_UI = moneydance_ui       # Necessary as calls to .getUI() will try to load UI if None - we don't want this....
 if MD_REF is None: raise Exception(u"CRITICAL ERROR - moneydance object/variable is None?")
-if checkObjectInNameSpace(u"moneydance_extension_loader"):
-    MD_EXTENSION_LOADER = moneydance_extension_loader
+
+if checkObjectInNameSpace(u"moneydance_this_fm"):
+    MD_EXTENSION_LOADER = moneydance_this_fm
 else:
-    MD_EXTENSION_LOADER = None
+    if checkObjectInNameSpace(u"moneydance_extension_loader"):
+        MD_EXTENSION_LOADER = moneydance_extension_loader
+    else:
+        MD_EXTENSION_LOADER = None
 
 if (u"__file__" in globals() and __file__.startswith(u"bootstrapped_")): del __file__       # Prevent bootstrapped loader setting this....
 
@@ -93,23 +129,33 @@ class MyJFrame(JFrame):
     def __init__(self, frameTitle=None):
         super(JFrame, self).__init__(frameTitle)
         self.disposing = False
-        self.myJFrameVersion = 3
+        self.myJFrameVersion = 5
         self.isActiveInMoneydance = False
         self.isRunTimeExtension = False
         self.MoneydanceAppListener = None
         self.HomePageViewObj = None
 
     def dispose(self):
-        # This removes all content as VAqua retains the JFrame reference in memory...
+        # This removes all content as Java/Swing (often) retains the JFrame reference in memory...
+        # The try/exceptions are needed to ensure we actually get a dispose occurring...
         if self.disposing: return
         try:
             self.disposing = True
-            self.removeAll()
-            if self.getJMenuBar() is not None: self.setJMenuBar(None)
+            try: self.getContentPane().removeAll()
+            except: _msg = "%s: ERROR in .removeAll() WHILST DISPOSING FRAME: %s\n" %(myModuleID, self); print(_msg); System.err.write(_msg)
+            if self.getJMenuBar() is not None:
+                try: self.setJMenuBar(None)
+                except: _msg = "%s: ERROR  in .setJMenuBar(None) WHILST DISPOSING FRAME: %s\n" %(myModuleID, self); print(_msg); System.err.write(_msg)
+            rootPane = self.getRootPane()
+            if rootPane is not None:
+                try:
+                    rootPane.getInputMap().clear()
+                    rootPane.getActionMap().clear()
+                except: _msg = "%s: ERROR in .getInputMap().clear() / .getActionMap().clear() WHILST DISPOSING FRAME: %s\n" %(myModuleID, self); print(_msg); System.err.write(_msg)
             super(self.__class__, self).dispose()
+            # if True: _msg = "%s: SUCCESSFULLY DISPOSED FRAME: %s\n" %(myModuleID, self); print(_msg); System.err.write(_msg)
         except:
-            _msg = "%s: ERROR DISPOSING OF FRAME: %s\n" %(myModuleID, self)
-            print(_msg); System.err.write(_msg)
+            _msg = "%s: ERROR DISPOSING OF FRAME: %s\n" %(myModuleID, self); print(_msg); System.err.write(_msg)
         finally:
             self.disposing = False
 
@@ -194,14 +240,15 @@ elif frameToResurrect and frameToResurrect.isRunTimeExtension:
     try: MD_REF_UI.showInfoMessage(msg)
     except: raise Exception(msg)
 
-elif not _I_CAN_RUN_AS_MONEYBOT_SCRIPT and u"__file__" in globals():
-    msg = "%s: Sorry - this script cannot be run in Moneybot console. Please install mxt and run extension properly. Must be on build: %s onwards. Now exiting script!\n" %(myModuleID, MIN_BUILD_REQD)
+elif not _I_CAN_RUN_AS_DEVELOPER_CONSOLE_SCRIPT and u"__file__" in globals():
+    msg = "%s: Sorry - this script cannot be run in Developer Console. Please install mxt and run extension properly. Must be on build: %s onwards. Now exiting script!\n" %(myModuleID, MIN_BUILD_REQD)
     print(msg); System.err.write(msg)
     try: MD_REF_UI.showInfoMessage(msg)
     except: raise Exception(msg)
 
-elif not _I_CAN_RUN_AS_MONEYBOT_SCRIPT and not checkObjectInNameSpace(u"moneydance_extension_loader"):
-    msg = "%s: Error - moneydance_extension_loader seems to be missing? Must be on build: %s onwards. Now exiting script!\n" %(myModuleID, MIN_BUILD_REQD)
+elif not _I_CAN_RUN_AS_DEVELOPER_CONSOLE_SCRIPT and not checkObjectInNameSpace(u"moneydance_extension_loader")\
+        and not checkObjectInNameSpace(u"moneydance_this_fm"):
+    msg = "%s: Error - moneydance_extension_loader or moneydance_this_fm seems to be missing? Must be on build: %s onwards. Now exiting script!\n" %(myModuleID, MIN_BUILD_REQD)
     print(msg); System.err.write(msg)
     try: MD_REF_UI.showInfoMessage(msg)
     except: raise Exception(msg)
@@ -225,10 +272,12 @@ else:
     # COMMON IMPORTS #######################################################################################################
     # COMMON IMPORTS #######################################################################################################
 
-    # NOTE: As of MD2022(4040) python.getSystemState().setdefaultencoding("utf8") is called on the python interpreter at launch...
-    import sys
-    reload(sys)  # Dirty hack to eliminate UTF-8 coding errors
-    sys.setdefaultencoding('utf8')  # Dirty hack to eliminate UTF-8 coding errors. Without this str() fails on unicode strings...
+    global sys
+    if "sys" not in globals():
+        # NOTE: As of MD2022(4040), python.getSystemState().setdefaultencoding("utf8") is called on the python interpreter at script launch...
+        import sys
+        reload(sys)                     # Dirty hack to eliminate UTF-8 coding errors
+        sys.setdefaultencoding('utf8')  # Without this str() fails on unicode strings...
 
     import os
     import os.path
@@ -253,8 +302,10 @@ else:
     from com.infinitekind.moneydance.model import AccountUtil, AcctFilter, CurrencyType, CurrencyUtil
     from com.infinitekind.moneydance.model import Account, Reminder, ParentTxn, SplitTxn, TxnSearch, InvestUtil, TxnUtil
 
-    from com.moneydance.apps.md.controller import AccountBookWrapper
+    from com.moneydance.apps.md.controller import AccountBookWrapper, AppEventManager                                   # noqa
     from com.infinitekind.moneydance.model import AccountBook
+    from com.infinitekind.tiksync import SyncRecord                                                                     # noqa
+    from com.infinitekind.util import StreamTable                                                                       # noqa
 
     from javax.swing import JButton, JScrollPane, WindowConstants, JLabel, JPanel, JComponent, KeyStroke, JDialog, JComboBox
     from javax.swing import JOptionPane, JTextArea, JMenuBar, JMenu, JMenuItem, AbstractAction, JCheckBoxMenuItem, JFileChooser
@@ -284,6 +335,12 @@ else:
     from java.io import FileNotFoundException, FilenameFilter, File, FileInputStream, FileOutputStream, IOException, StringReader
     from java.io import BufferedReader, InputStreamReader
     from java.nio.charset import Charset
+
+    if int(MD_REF.getBuild()) >= 3067:
+        from com.moneydance.apps.md.view.gui.theme import ThemeInfo                                                     # noqa
+    else:
+        from com.moneydance.apps.md.view.gui.theme import Theme as ThemeInfo                                            # noqa
+
     if isinstance(None, (JDateField,CurrencyUtil,Reminder,ParentTxn,SplitTxn,TxnSearch, JComboBox, JCheckBox,
                          AccountBook, AccountBookWrapper, Long, Integer, Boolean,
                          JTextArea, JMenuBar, JMenu, JMenuItem, JCheckBoxMenuItem, JFileChooser, JDialog,
@@ -324,13 +381,14 @@ else:
             i_am_an_extension_so_run_headless = None
             parametersLoadedFromFile = {}
             thisScriptName = None
-            MD_MDPLUS_BUILD = 4040
-            MD_ALERTCONTROLLER_BUILD = 4077
+            MD_MDPLUS_BUILD = 4040                          # 2022.0
+            MD_ALERTCONTROLLER_BUILD = 4077                 # 2022.3
             def __init__(self): pass    # Leave empty
 
             class Strings:
                 def __init__(self): pass    # Leave empty
 
+    GlobalVars.MD_PREFERENCE_KEY_CURRENT_THEME = "gui.current_theme"
     GlobalVars.thisScriptName = u"%s.py(Extension)" %(myModuleID)
 
     # END SET THESE VARIABLES FOR ALL SCRIPTS ##############################################################################
@@ -357,7 +415,6 @@ else:
 
     from com.moneydance.apps.md.controller import Main
     from com.infinitekind.util import StringUtils
-    from com.infinitekind.tiksync import SyncRecord
     from com.infinitekind.moneydance.model import ReportSpec, CurrencySnapshot, ReportSpec, AccountBook
     from com.moneydance.apps.md.view.gui import GraphReportGenerator, IntervalChooser, DateRangeChooser
     from com.moneydance.apps.md.view.gui import SecondaryDialog, OKButtonPanel, OKButtonListener
@@ -394,15 +451,21 @@ else:
     from org.jfree.chart.renderer.xy import XYLineAndShapeRenderer
     from org.jfree.data.time import TimeSeries, TimeSeriesCollection, RegularTimePeriod, TimeTableXYDataset
     from org.jfree.data.xy import XYDataset
-    from org.jfree.chart import ChartUtilities
+    if MD_REF.getBuild() < 5100:
+        from org.jfree.chart import ChartUtilities as ChartUtils                                                        # noqa (renamed from 5100 onwards)
+        from org.jfree.ui import RectangleInsets
+    else:
+        from org.jfree.chart import ChartUtils
+        from org.jfree.chart.ui import RectangleInsets
     from org.jfree.chart.block import BlockBorder
-    from org.jfree.ui import RectangleInsets
     from org.jfree.chart.title import LegendTitle, TextTitle, Title                                                     # noqa
     from org.jfree.chart import ChartFactory
     from org.jfree.chart.renderer.xy import AbstractXYItemRenderer
     from org.jfree.chart.axis import TickUnits, DateTickUnitType
     from org.jfree.data.time import TimeSeriesDataItem
     from org.jfree.data import Range
+
+    from java.lang.ref import WeakReference
 
     # renamed in MD build 3067
     if int(MD_REF.getBuild()) >= 3067:
@@ -433,24 +496,24 @@ else:
     scriptExit = """
 ----------------------------------------------------------------------------------------------------------------------
 Thank you for using %s!
-The author has other useful Extensions / Moneybot Python scripts available...:
+The author has other useful Extensions / 'Developer Console' Python scripts available...:
 
 Extension (.mxt) format only:
-Toolbox:                                View Moneydance settings, diagnostics, fix issues, change settings and much more
-                                        + Extension Menus: Total selected transactions & Move Investment Transactions
+Toolbox: View Moneydance settings, diagnostics, fix issues, change settings and much more
+         + Extension menus: Total selected txns; Move Investment Txns; Zap md+/ofx/qif (default) memo fields;
+
 Custom Balances (net_account_balances): Summary Page (HomePage) widget. Display the total of selected Account Balances
 
 Extension (.mxt) and Script (.py) Versions available:
-Extract Data:                           Extract various data to screen and/or csv.. Consolidation of:
-- stockglance2020                       View summary of Securities/Stocks on screen, total by Security, export to csv 
-- extract_reminders_csv                 View reminders on screen, edit if required, extract all to csv
-- extract_currency_history_csv          Extract currency history to csv
-- extract_investment_transactions_csv   Extract investment transactions to csv
-- extract_account_registers_csv         Extract Account Register(s) to csv along with any attachments
+Extract Data: Extract various data to screen /or csv.. (also auto-extract mode): Includes:
+    - StockGlance2020: Securities/stocks, total by security across investment accounts;
+    - Reminders; Account register transaction (attachments optional);
+    - Investment transactions (attachments optional); Security Balances; Currency price history;
+    - Decrypt / extract raw 'Trunk' file; Extract raw data as JSON file; All attachments;
 
 List Future Reminders:                  View future reminders on screen. Allows you to set the days to look forward
-Accounts Categories Mega Search Window: Combines MD Menu> Tools>Accounts/Categories and adds Quick Search box/capability
 Security Performance Graph:             Graphs selected securities, calculating relative price performance as percentage
+Accounts Categories Mega Search Window: Combines MD Menu> Tools>Accounts/Categories and adds Quick Search box/capability
 
 A collection of useful ad-hoc scripts (zip file)
 useful_scripts:                         Just unzip and select the script you want for the task at hand...
@@ -463,6 +526,11 @@ Visit: %s (Author's site)
         global MD_REF, MD_REF_UI, MD_EXTENSION_LOADER
         # myPrint("DB","About to delete reference to MD_REF, MD_REF_UI and MD_EXTENSION_LOADER....!")
         # del MD_REF, MD_REF_UI, MD_EXTENSION_LOADER
+
+        myPrint("DB", "... destroying own reference to frame('security_performance_graph_frame_')...")
+        global security_performance_graph_frame_
+        security_performance_graph_frame_ = None
+        del security_performance_graph_frame_
 
     def load_text_from_stream_file(theStream):
         myPrint("DB", "In ", inspect.currentframe().f_code.co_name, "()")
@@ -513,7 +581,7 @@ Visit: %s (Author's site)
             printString = ""
             for what in args:
                 printString += "%s " %what
-            printString = printString.strip()
+            printString = printString.rstrip(" ")
 
             if where == "P" or where == "B" or where[0] == "D":
                 if not GlobalVars.i_am_an_extension_so_run_headless:
@@ -530,7 +598,7 @@ Visit: %s (Author's site)
                     System.err.write(printString)
                     System.err.write("\n")
                 except:
-                    System.err.write(GlobalVars.thisScriptName + ":" + dt + ": "+"Error writing to console")
+                    System.err.write(GlobalVars.thisScriptName + ":" + dt + ": " + "Error writing to console")
                     dump_sys_error_to_md_console_and_errorlog()
 
         except IllegalArgumentException:
@@ -538,6 +606,9 @@ Visit: %s (Author's site)
             dump_sys_error_to_md_console_and_errorlog()
 
         return
+
+
+    if debug: myPrint("B", "** DEBUG IS ON **")
 
     def dump_sys_error_to_md_console_and_errorlog(lReturnText=False):
 
@@ -780,9 +851,12 @@ Visit: %s (Author's site)
     def isMDThemeVAQua():
         if Platform.isOSX():
             try:
-                currentTheme = MD_REF.getUI().getCurrentTheme()
-                if ".vaqua" in safeStr(currentTheme.getClass()).lower(): return True
-            except: pass
+                # currentTheme = MD_REF.getUI().getCurrentTheme()       # Not reset when changed in-session as it's a final variable!
+                # if ".vaqua" in safeStr(currentTheme.getClass()).lower(): return True
+                currentTheme = ThemeInfo.themeForID(MD_REF.getUI(), MD_REF.getPreferences().getSetting(GlobalVars.MD_PREFERENCE_KEY_CURRENT_THEME, ThemeInfo.DEFAULT_THEME_ID))
+                if ".vaqua" in currentTheme.getClass().getName().lower(): return True                                   # noqa
+            except:
+                myPrint("B", "@@ Error in isMDThemeVAQua() - Alert author! Error:", sys.exc_info()[1])
         return False
 
     def isIntelX86_32bit():
@@ -939,10 +1013,14 @@ Visit: %s (Author's site)
             self.messageJText = None
             if not self.theMessage.endswith("\n"): self.theMessage+="\n"
             if self.OKButtonText == "": self.OKButtonText="OK"
-            # if Platform.isOSX() and int(float(MD_REF.getBuild())) >= 3039: self.lAlertLevel = 0    # Colors don't work on Mac since VAQua
             if isMDThemeDark() or isMacDarkModeDetected(): self.lAlertLevel = 0
 
         def updateMessages(self, newTitle=None, newStatus=None, newMessage=None, lPack=True):
+            # We wait when on the EDT as most scripts execute on the EDT.. So this is probably an in execution update message
+            # ... if we invokeLater() then the message will (probably) only appear after the EDT script finishes....
+            genericSwingEDTRunner(False, True, self._updateMessages, newTitle, newStatus, newMessage, lPack)
+
+        def _updateMessages(self, newTitle=None, newStatus=None, newMessage=None, lPack=True):
             if not newTitle and not newStatus and not newMessage: return
             if newTitle:
                 self.theTitle = newTitle
@@ -1046,10 +1124,8 @@ Visit: %s (Author's site)
                     self._popup_d.dispose()
 
             myPrint("D", "Exiting ", inspect.currentframe().f_code.co_name, "()")
-            return
 
-        def result(self):
-            return self.lResult[0]
+        def result(self): return self.lResult[0]
 
         def go(self):
             myPrint("DB", "In MyPopUpDialogBox.", inspect.currentframe().f_code.co_name, "()")
@@ -1059,8 +1135,7 @@ Visit: %s (Author's site)
                 def __init__(self, callingClass):
                     self.callingClass = callingClass
 
-                def run(self):                                                                                                      # noqa
-
+                def run(self):                                                                                          # noqa
                     myPrint("DB", "In MyPopUpDialogBoxRunnable.", inspect.currentframe().f_code.co_name, "()")
                     myPrint("DB", "SwingUtilities.isEventDispatchThread() = %s" %(SwingUtilities.isEventDispatchThread()))
 
@@ -1092,12 +1167,10 @@ Visit: %s (Author's site)
                         maxDialogWidth = min(screenSize.width-20, self.callingClass.maxSize.width)
                         maxDialogHeight = min(screenSize.height-40, self.callingClass.maxSize.height)
                         maxDimension = Dimension(maxDialogWidth,maxDialogHeight)
-                        # self.callingClass._popup_d.setPreferredSize(Dimension(maxDialogWidth,maxDialogHeight))
                     else:
                         maxDialogWidth = min(screenSize.width-20, max(GetFirstMainFrame.DEFAULT_MAX_WIDTH, int(round(GetFirstMainFrame.getSize().width *.9,0))))
                         maxDialogHeight = min(screenSize.height-40, max(GetFirstMainFrame.DEFAULT_MAX_WIDTH, int(round(GetFirstMainFrame.getSize().height *.9,0))))
                         maxDimension = Dimension(maxDialogWidth,maxDialogHeight)
-                        # self.callingClass._popup_d.setPreferredSize(Dimension(maxDialogWidth,maxDialogHeight))
 
                     # noinspection PyUnresolvedReferences
                     self.callingClass._popup_d = MyJDialog(maxDimension,
@@ -1199,10 +1272,14 @@ Visit: %s (Author's site)
                     self.callingClass._popup_d.setVisible(True)
 
             if not SwingUtilities.isEventDispatchThread():
-                myPrint("DB",".. Not running within the EDT so calling via MyPopUpDialogBoxRunnable()...")
-                SwingUtilities.invokeAndWait(MyPopUpDialogBoxRunnable(self))
+                if not self.lModal:
+                    myPrint("DB",".. Not running on the EDT, but also NOT Modal, so will .invokeLater::MyPopUpDialogBoxRunnable()...")
+                    SwingUtilities.invokeLater(MyPopUpDialogBoxRunnable(self))
+                else:
+                    myPrint("DB",".. Not running on the EDT so calling .invokeAndWait::MyPopUpDialogBoxRunnable()...")
+                    SwingUtilities.invokeAndWait(MyPopUpDialogBoxRunnable(self))
             else:
-                myPrint("DB",".. Already within the EDT so calling naked...")
+                myPrint("DB",".. Already on the EDT, just executing::MyPopUpDialogBoxRunnable() now...")
                 MyPopUpDialogBoxRunnable(self).run()
 
             myPrint("D", "Exiting ", inspect.currentframe().f_code.co_name, "()")
@@ -1254,6 +1331,7 @@ Visit: %s (Author's site)
         def __init__(self, ext): self.ext = "." + ext.upper()                                                           # noqa
 
         def accept(self, thedir, filename):                                                                             # noqa
+            # type: (File, str) -> bool
             if filename is not None and filename.upper().endswith(self.ext): return True
             return False
 
@@ -1264,7 +1342,9 @@ Visit: %s (Author's site)
         def getDescription(self): return "*"+self.ext                                                                   # noqa
 
         def accept(self, _theFile):                                                                                     # noqa
+            # type: (File) -> bool
             if _theFile is None: return False
+            if _theFile.isDirectory(): return True
             return _theFile.getName().upper().endswith(self.ext)
 
     def MDDiag():
@@ -1453,16 +1533,12 @@ Visit: %s (Author's site)
             GlobalVars.parametersLoadedFromFile = {}
             return
 
-        old_dict_filename = os.path.join("..", myFile)
-
-        # Pickle was originally encrypted, no need, migrating to unencrypted
-        migratedFilename = os.path.join(MD_REF.getCurrentAccountBook().getRootFolder().getAbsolutePath(),myFile)
+        migratedFilename = os.path.join(MD_REF.getCurrentAccountBook().getRootFolder().getAbsolutePath(), myFile)
 
         myPrint("DB", "Now checking for parameter file:", migratedFilename)
 
-        if os.path.exists( migratedFilename ):
-
-            myPrint("DB", "loading parameters from non-encrypted Pickle file:", migratedFilename)
+        if os.path.exists(migratedFilename):
+            myPrint("DB", "loading parameters from (non-encrypted) Pickle file:", migratedFilename)
             myPrint("DB", "Parameter file", migratedFilename, "exists..")
             # Open the file
             try:
@@ -1483,34 +1559,17 @@ Visit: %s (Author's site)
                 myPrint("B", "Error: reached EOF on parameter file....")
                 GlobalVars.parametersLoadedFromFile = None
             except:
-                myPrint("B","Error opening Pickle File (will try encrypted version) - Unexpected error ", sys.exc_info()[0])
-                myPrint("B","Error opening Pickle File (will try encrypted version) - Unexpected error ", sys.exc_info()[1])
-                myPrint("B","Error opening Pickle File (will try encrypted version) - Line Number: ", sys.exc_info()[2].tb_lineno)
-
-                # OK, so perhaps from older version - encrypted, try to read
-                try:
-                    local_storage = MD_REF.getCurrentAccountBook().getLocalStorage()
-                    istr = local_storage.openFileForReading(old_dict_filename)
-                    load_file = FileUtil.wrap(istr)
-                    # noinspection PyTypeChecker
-                    GlobalVars.parametersLoadedFromFile = pickle.load(load_file)
-                    load_file.close()
-                    myPrint("B","Success loading Encrypted Pickle file - will migrate to non encrypted")
-                except:
-                    myPrint("B","Opening Encrypted Pickle File - Unexpected error ", sys.exc_info()[0])
-                    myPrint("B","Opening Encrypted Pickle File - Unexpected error ", sys.exc_info()[1])
-                    myPrint("B","Error opening Pickle File - Line Number: ", sys.exc_info()[2].tb_lineno)
-                    myPrint("B", "Error: Pickle.load() failed.... Is this a restored dataset? Will ignore saved parameters, and create a new file...")
-                    GlobalVars.parametersLoadedFromFile = None
+                myPrint("B", "Error opening Pickle File Unexpected error:", sys.exc_info()[0], "Error:", sys.exc_info()[1], "Line:", sys.exc_info()[2].tb_lineno)
+                myPrint("B", ">> Will ignore saved parameters, and create a new file...")
+                GlobalVars.parametersLoadedFromFile = None
 
             if GlobalVars.parametersLoadedFromFile is None:
                 GlobalVars.parametersLoadedFromFile = {}
-                myPrint("DB","Parameters did not load, will keep defaults..")
+                myPrint("DB","Parameters did NOT load, will use defaults..")
             else:
                 myPrint("DB","Parameters successfully loaded from file...")
         else:
-            myPrint("J", "Parameter Pickle file does not exist - will use default and create new file..")
-            myPrint("D", "Parameter Pickle file does not exist - will use default and create new file..")
+            myPrint("DB", "Parameter Pickle file does NOT exist - will use default and create new file..")
             GlobalVars.parametersLoadedFromFile = {}
 
         if not GlobalVars.parametersLoadedFromFile: return
@@ -1520,9 +1579,6 @@ Visit: %s (Author's site)
             myPrint("DB","...variable:", key, GlobalVars.parametersLoadedFromFile[key])
 
         if GlobalVars.parametersLoadedFromFile.get("debug") is not None: debug = GlobalVars.parametersLoadedFromFile.get("debug")
-        if GlobalVars.parametersLoadedFromFile.get("lUseMacFileChooser") is not None:
-            myPrint("B", "Detected old lUseMacFileChooser parameter/variable... Will delete it...")
-            GlobalVars.parametersLoadedFromFile.pop("lUseMacFileChooser", None)  # Old variable - not used - delete from parameter file
 
         myPrint("DB","Parameter file loaded if present and GlobalVars.parametersLoadedFromFile{} dictionary set.....")
 
@@ -1618,8 +1674,9 @@ Visit: %s (Author's site)
         return text
 
     def getColorBlue():
-        if not isMDThemeDark() and not isMacDarkModeDetected(): return(Color.BLUE)
-        return (MD_REF.getUI().getColors().defaultTextForeground)
+        # if not isMDThemeDark() and not isMacDarkModeDetected(): return(MD_REF.getUI().getColors().reportBlueFG)
+        # return (MD_REF.getUI().getColors().defaultTextForeground)
+        return MD_REF.getUI().getColors().reportBlueFG
 
     def getColorRed(): return (MD_REF.getUI().getColors().errorMessageForeground)
 
@@ -1742,6 +1799,10 @@ Visit: %s (Author's site)
 
         _THIS_METHOD_NAME = "Dynamic File Chooser"
 
+        if not Platform.isOSX() and lForceFD and not fileChooser_selectFiles:
+            myPrint("DB", "@@ Overriding lForceFD to False - as it won't work for selecting Folders on Windows/Linux!")
+            lForceFD = False
+
         if fileChooser_multiMode:
             myPrint("B","@@ SORRY Multi File Selection Mode has not been coded! Exiting...")
             return None
@@ -1794,7 +1855,6 @@ Visit: %s (Author's site)
             else:
                 fileDialog.setMode(FileDialog.SAVE)
 
-            # if fileChooser_fileFilterText is not None and (not Platform.isOSX() or not Platform.isOSXVersionAtLeast("10.13")):
             if fileChooser_fileFilterText is not None and (not Platform.isOSX() or isOSXVersionMontereyOrLater()):
                 myPrint("DB",".. Adding file filter for: %s" %(fileChooser_fileFilterText))
                 fileDialog.setFilenameFilter(ExtFilenameFilter(fileChooser_fileFilterText))
@@ -1835,7 +1895,6 @@ Visit: %s (Author's site)
             else:
                 jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)   # FILES_ONLY, DIRECTORIES_ONLY, FILES_AND_DIRECTORIES
 
-            # if fileChooser_fileFilterText is not None and (not Platform.isOSX() or not Platform.isOSXVersionAtLeast("10.13")):
             if fileChooser_fileFilterText is not None and (not Platform.isOSX() or isOSXVersionMontereyOrLater()):
                 myPrint("DB",".. Adding file filter for: %s" %(fileChooser_fileFilterText))
                 jfc.setFileFilter(ExtFileFilterJFC(fileChooser_fileFilterText))
@@ -2696,7 +2755,7 @@ Visit: %s (Author's site)
             _label1.setForeground(getColorBlue())
             aboutPanel.add(_label1)
 
-            _label2 = JLabel(pad("StuWareSoftSystems (2020-2022)", 800))
+            _label2 = JLabel(pad("StuWareSoftSystems (2020-2024)", 800))
             _label2.setForeground(getColorBlue())
             aboutPanel.add(_label2)
 
@@ -2898,9 +2957,121 @@ Visit: %s (Author's site)
                 return fm
         return None
 
+    GlobalVars.MD_KOTLIN_COMPILED_BUILD = 5000                                                                          # 2023.0
+    def isKotlinCompiledBuild(): return (float(MD_REF.getBuild()) >= GlobalVars.MD_KOTLIN_COMPILED_BUILD)                                           # 2023.0(5000)
+
     def isMDPlusEnabledBuild(): return (float(MD_REF.getBuild()) >= GlobalVars.MD_MDPLUS_BUILD)                         # 2022.0
 
     def isAlertControllerEnabledBuild(): return (float(MD_REF.getBuild()) >= GlobalVars.MD_ALERTCONTROLLER_BUILD)       # 2022.3
+
+    def genericSwingEDTRunner(ifOffEDTThenRunNowAndWait, ifOnEDTThenRunNowAndWait, codeblock, *args):
+        """Will detect and then run the codeblock on the EDT"""
+
+        isOnEDT = SwingUtilities.isEventDispatchThread()
+        # myPrint("DB", "** In .genericSwingEDTRunner(), ifOffEDTThenRunNowAndWait: '%s', ifOnEDTThenRunNowAndWait: '%s', codeblock: '%s', args: '%s'" %(ifOffEDTThenRunNowAndWait, ifOnEDTThenRunNowAndWait, codeblock, args))
+        myPrint("DB", "** In .genericSwingEDTRunner(), ifOffEDTThenRunNowAndWait: '%s', ifOnEDTThenRunNowAndWait: '%s', codeblock: <codeblock>, args: <args>" %(ifOffEDTThenRunNowAndWait, ifOnEDTThenRunNowAndWait))
+        myPrint("DB", "** In .genericSwingEDTRunner(), isOnEDT:", isOnEDT)
+
+        class GenericSwingEDTRunner(Runnable):
+
+            def __init__(self, _codeblock, arguments):
+                self.codeBlock = _codeblock
+                self.params = arguments
+
+            def run(self):
+                myPrint("DB", "** In .genericSwingEDTRunner():: GenericSwingEDTRunner().run()... about to execute codeblock.... isOnEDT:", SwingUtilities.isEventDispatchThread())
+                self.codeBlock(*self.params)
+                myPrint("DB", "** In .genericSwingEDTRunner():: GenericSwingEDTRunner().run()... finished executing codeblock....")
+
+        _gser = GenericSwingEDTRunner(codeblock, args)
+
+        if ((isOnEDT and not ifOnEDTThenRunNowAndWait) or (not isOnEDT and not ifOffEDTThenRunNowAndWait)):
+            myPrint("DB", "... calling codeblock via .invokeLater()...")
+            SwingUtilities.invokeLater(_gser)
+        elif not isOnEDT:
+            myPrint("DB", "... calling codeblock via .invokeAndWait()...")
+            SwingUtilities.invokeAndWait(_gser)
+        else:
+            myPrint("DB", "... calling codeblock.run() naked...")
+            _gser.run()
+
+        myPrint("DB", "... finished calling the codeblock via method reported above...")
+
+    def genericThreadRunner(daemon, codeblock, *args):
+        """Will run the codeblock on a new Thread"""
+
+        # myPrint("DB", "** In .genericThreadRunner(), codeblock: '%s', args: '%s'" %(codeblock, args))
+        myPrint("DB", "** In .genericThreadRunner(), codeblock: <codeblock>, args: <args>")
+
+        class GenericThreadRunner(Runnable):
+
+            def __init__(self, _codeblock, arguments):
+                self.codeBlock = _codeblock
+                self.params = arguments
+
+            def run(self):
+                myPrint("DB", "** In .genericThreadRunner():: GenericThreadRunner().run()... about to execute codeblock....")
+                self.codeBlock(*self.params)
+                myPrint("DB", "** In .genericThreadRunner():: GenericThreadRunner().run()... finished executing codeblock....")
+
+        _gtr = GenericThreadRunner(codeblock, args)
+
+        _t = Thread(_gtr, "NAB_GenericThreadRunner".lower())
+        _t.setDaemon(daemon)
+        _t.start()
+
+        myPrint("DB", "... finished calling the codeblock...")
+
+    GlobalVars.EXTN_PREF_KEY = "stuwaresoftsystems" + "." + myModuleID
+    GlobalVars.EXTN_PREF_KEY_ENABLE_OBSERVER = "enable_observer"
+    GlobalVars.EXTN_PREF_KEY_DISABLE_FORESIGHT = "disable_moneyforesight"
+
+    class StreamTableFixed(StreamTable):
+        """Replicates StreamTable. Provide a source to merge. Method .getBoolean() is 'fixed' to be backwards compatible with builds prior to Kotlin (Y/N vs 0/1)"""
+        def __init__(self, _streamTableToCopy):
+            # type: (StreamTable) -> None
+            if not isinstance(_streamTableToCopy, StreamTable): raise Exception("LOGIC ERROR: Must pass a StreamTable! (Passed: %s)" %(type(_streamTableToCopy)))
+            self.merge(_streamTableToCopy)
+
+        def getBoolean(self, key, defaultVal):
+            # type: (basestring, bool) -> bool
+            if isKotlinCompiledBuild():     # MD2023.0 First Kotlin release - changed the code from detecting only Y/N to Y/N/T/F/0/1
+                return super(self.__class__, self).getBoolean(key, defaultVal)
+            _value = self.get(key, None)
+            if _value in ["1", "Y", "y", "T", "t", "true", True]: return True
+            if _value in ["0", "N", "n", "F", "f", "false", False]: return False
+            return defaultVal
+
+    def getExtensionDatasetSettings():
+        # type: () -> SyncRecord
+        _extnSettings =  GlobalVars.CONTEXT.getCurrentAccountBook().getLocalStorage().getSubset(GlobalVars.EXTN_PREF_KEY)
+        if debug: myPrint("B", "Retrieved Extension Dataset Settings from LocalStorage: %s" %(_extnSettings))
+        return _extnSettings
+
+    def saveExtensionDatasetSettings(newExtnSettings):
+        # type: (SyncRecord) -> None
+        if not isinstance(newExtnSettings, SyncRecord):
+            raise Exception("ERROR: 'newExtnSettings' is not a SyncRecord (given: '%s')" %(type(newExtnSettings)))
+        _localStorage = GlobalVars.CONTEXT.getCurrentAccountBook().getLocalStorage()
+        _localStorage.put(GlobalVars.EXTN_PREF_KEY, newExtnSettings)
+        if debug: myPrint("B", "Stored Extension Dataset Settings into LocalStorage: %s" %(newExtnSettings))
+
+    def getExtensionGlobalPreferences(enhancedBooleanCheck=True):
+        # type: (bool) -> StreamTable
+        _extnPrefs =  GlobalVars.CONTEXT.getPreferences().getTableSetting(GlobalVars.EXTN_PREF_KEY, StreamTable())
+        if not isKotlinCompiledBuild():
+            if enhancedBooleanCheck:
+                _extnPrefs = StreamTableFixed(_extnPrefs)
+                myPrint("DB", "... copied retrieved Extension Global Preferences into enhanced StreamTable for backwards .getBoolean() capability...")
+        if debug: myPrint("B", "Retrieved Extension Global Preference: %s" %(_extnPrefs))
+        return _extnPrefs
+
+    def saveExtensionGlobalPreferences(newExtnPrefs):
+        # type: (StreamTable) -> None
+        if not isinstance(newExtnPrefs, StreamTable):
+            raise Exception("ERROR: 'newExtnPrefs' is not a StreamTable (given: '%s')" %(type(newExtnPrefs)))
+        GlobalVars.CONTEXT.getPreferences().setSetting(GlobalVars.EXTN_PREF_KEY, newExtnPrefs)
+        if debug: myPrint("B", "Stored Extension Global Preferences: %s" %(newExtnPrefs))
 
     # END COMMON DEFINITIONS ###############################################################################################
     # END COMMON DEFINITIONS ###############################################################################################
@@ -2935,7 +3106,6 @@ Visit: %s (Author's site)
         myPrint("DB","variables dumped from memory back into parametersLoadedFromFile{}.....:", GlobalVars.parametersLoadedFromFile)
         return
 
-    # Just grab debug etc... Nothing extra
     get_StuWareSoftSystems_parameters_from_file(myFile="%s_extension.dict" %(myModuleID))
 
     # clear up any old left-overs....
@@ -2974,11 +3144,18 @@ Visit: %s (Author's site)
     # END ALL CODE COPY HERE ###############################################################################################
     # END ALL CODE COPY HERE ###############################################################################################
 
+    GlobalVars.MD_MEMREPORTS_UPGRADED_BUILD = 5142                                                                      # MD2024.2(5142)
+    def isMemReportsUpgradedBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_MEMREPORTS_UPGRADED_BUILD)
+
+    if isKotlinCompiledBuild():
+        from okio import BufferedSource, Buffer, Okio                                                                   # noqa
+        if debug: myPrint("B", "** Kotlin compiled build detected, new libraries enabled.....")
+
     def getPosNegColor(value):
         if value < 0.0:
             color = MD_REF.getUI().colors.negativeBalFG
         else:
-            if "default" == ThemeInfo.themeForID(MD_REF.getUI(), MD_REF.getUI().getPreferences().getSetting("gui.current_theme", ThemeInfo.DEFAULT_THEME_ID)).getThemeID():
+            if "default" == ThemeInfo.themeForID(MD_REF.getUI(), MD_REF.getUI().getPreferences().getSetting(GlobalVars.MD_PREFERENCE_KEY_CURRENT_THEME, ThemeInfo.DEFAULT_THEME_ID)).getThemeID():
                 color = MD_REF.getUI().colors.budgetHealthyColor
             else:
                 color = MD_REF.getUI().colors.positiveBalFG
@@ -3007,120 +3184,6 @@ Visit: %s (Author's site)
         return "<html>%s<font color=#%s>%s</font></html>" %(_text, _colorHex, strPct)
 
 
-    # class MyJList(JList):
-    #
-    #     KEY = "selected_securities"
-    #
-    #     def __init__(self, moneydanceContext, ctable, includeHiddenSecuritiesChoice, *args):
-    #         # type: (Main, CurrencyTable, JCheckBox, any) -> None
-    #         self.moneydanceContext = moneydanceContext
-    #         self.ctable = ctable
-    #         self.includeHiddenSecuritiesChoice = includeHiddenSecuritiesChoice
-    #         super(self.__class__, self).__init__(*args)                                                                 # noqa
-    #         self.saveSelectedSecList = None
-    #
-    #     def loadDataModel(self):
-    #         # type: () -> None
-    #         securityList = []
-    #         for curSec in sorted(self.ctable.getAllCurrencies(), key=lambda x: safeStr(x.getName()).upper()):
-    #             # noinspection PyUnresolvedReferences
-    #             if curSec.getCurrencyType() != CurrencyType.Type.SECURITY: continue
-    #             if curSec.getHideInUI() and not self.includeHiddenSecuritiesChoice.isSelected(): continue
-    #             securityList.append(StoreCurrencyType(curSec))
-    #         self.setListData(securityList)
-    #
-    #     def selectSecurities(self):
-    #
-    #         if len(self.saveSelectedSecList) < 1: return False
-    #
-    #         listModel = self.getModel()
-    #         if listModel.getSize() < 1: return False
-    #
-    #         securitiesToSelect = []
-    #         for key in self.saveSelectedSecList:
-    #             foundSecurity = self.moneydanceContext.getCurrentAccountBook().getCurrencyByUUID(self.saveSelectedSecList[key])
-    #             if foundSecurity is not None: securitiesToSelect.append(foundSecurity)
-    #
-    #         indicesToSelect = []
-    #
-    #         for i in range(0, listModel.getSize()):
-    #             modelSec = listModel.getElementAt(i)    # type: StoreCurrencyType
-    #             if modelSec.getCurrencyType() in securitiesToSelect:
-    #                 indicesToSelect.append(i)
-    #         if len(indicesToSelect) < 1: return False
-    #         self.setSelectedIndices(indicesToSelect)
-    #         return True
-    #
-    #     def loadFromParameters(self, parameters, loadKey=None):
-    #         # type: (SyncRecord, str) -> bool
-    #
-    #         if loadKey is None: loadKey = self.__class__.KEY
-    #
-    #         self.loadDataModel()
-    #
-    #         self.saveSelectedSecList = parameters.getSubset(loadKey)
-    #
-    #         return self.selectSecurities()
-    #
-    #     def storeToParameters(self, parameters, saveKey=None):
-    #         # type: (SyncRecord, str) -> None
-    #
-    #         if saveKey is None: saveKey = self.__class__.KEY
-    #
-    #         selectedSecurities = self.getSelectedValues()
-    #         if len(selectedSecurities) < 1:
-    #             parameters.removeSubset(saveKey)
-    #         else:
-    #             securityUUIDsToSave = []
-    #             for sec in selectedSecurities:
-    #                 securityUUIDsToSave.append(sec.getUUID())
-    #             parameters.put(saveKey, securityUUIDsToSave)
-    #
-    # class MyJListRenderer(DefaultListCellRenderer):
-    #
-    #     def __init__(self):
-    #         super(self.__class__, self).__init__()                                                                     # noqa
-    #
-    #     def getListCellRendererComponent(self, thelist, value, index, isSelected, cellHasFocus):
-    #         lightLightGray = Color(0xDCDCDC)
-    #         c = super(self.__class__, self).getListCellRendererComponent(thelist, value, index, isSelected, cellHasFocus) # noqa
-    #         # c.setBackground(self.getBackground() if index % 2 == 0 else lightLightGray)
-    #
-    #         # Create a line separator between accounts
-    #         c.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, lightLightGray))
-    #         return c
-    #
-    # class MyDefaultListSelectionModel(DefaultListSelectionModel):
-    #     # Change the selector - so not to deselect items when selecting others...
-    #     def __init__(self):
-    #         super(self.__class__, self).__init__()                                                                      # noqa
-    #
-    #     def setSelectionInterval(self, start, end):
-    #         if (start != end):
-    #             super(self.__class__, self).setSelectionInterval(start, end)                                            # noqa
-    #         elif self.isSelectedIndex(start):
-    #             self.removeSelectionInterval(start, end)
-    #         else:
-    #             self.addSelectionInterval(start, end)
-    #
-    # class StoreCurrencyType():
-    #     def __init__(self, obj):
-    #         self.obj = obj      # type: CurrencyType
-    #
-    #     def getCurrencyType(self):  return self.obj
-    #     def getUUID(self):          return self.getCurrencyType().getUUID()
-    #     def getSnapshots(self):     return self.getCurrencyType().getSnapshots()
-    #
-    #     def __str__(self):
-    #         ct = self.getCurrencyType()
-    #         # name = ct.getName()
-    #         # if name is not None and len(name.trim()) > 0: return name
-    #         # return ct.getIDString() + ":" + ct.getIDString()
-    #         return ct.toString()
-    #
-    #     def __repr__(self):         return self.__str__()
-    #     def toString(self):         return self.__str__()
-
     class MyAcctFilter(AcctFilter):
         def __init__(self, securities):
             # type: ([CurrencyType]) -> None
@@ -3132,20 +3195,6 @@ Visit: %s (Author's site)
             if not acct.getAccountType() == Account.AccountType.SECURITY: return False
             if acct.getCurrencyType() not in self.securities: return False
             return True
-
-    # class MyTxnSearchFilter(TxnSearch):
-    #
-    #     def __init__(self, security, dateStart, dateEnd):
-    #         self.security = security
-    #         self.dateStart = dateStart
-    #         self.dateEnd = dateEnd
-    #
-    #     def matchesAll(self): return False
-    #
-    #     def matches(self, txn):
-    #         if txn.getDateInt() < self.dateStart or txn.getDateInt() > self.dateEnd: return False
-    #         if txn.getAccount().getCurrencyType() != self.security: return False
-    #         return True
 
     class MyDateRangeChooser(DateRangeChooser):
         def __init__(self, *args):
@@ -3577,13 +3626,13 @@ Visit: %s (Author's site)
             # type: (Main, CurrencyTable, SecurityFilterPanel) -> None
             self.moneydanceContext = moneydanceContext
             self.securityFilter = securityFilter
-            self.ctable = ctable
+            self._ctable = ctable
 
             super(self.__class__, self).__init__()
 
-            self.saveSelectedSecUUIDList = None         # type: SyncRecord
-            self.baseSecurityList = []                  # type: [CurrencyType]
-            self.securityJCheckBoxList = []             # type: [SecurityChooser.SecurityJCheckBox]
+            self.saveSelectedSecUUIDList = None                                                                         # type: SyncRecord
+            self._baseSecurityList = []                                                                                  # type: [CurrencyType]
+            self.securityJCheckBoxList = []                                                                             # type: [SecurityChooser.SecurityJCheckBox]
 
             self.pnlJCheckBoxList = JPanel(GridBagLayout())
             self.pnlJCheckBoxList.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8))
@@ -3610,17 +3659,17 @@ Visit: %s (Author's site)
 
         def recreateJCheckBoxList(self):
             self.securityJCheckBoxList = []
-            for sec in self.baseSecurityList:
+            for sec in self._baseSecurityList:
                 self.securityJCheckBoxList.append(self.__class__.SecurityJCheckBox(sec, self.securityFilter))
 
         def loadDataModel(self):
             securityList = []
-            for curSec in sorted(self.ctable.getAllCurrencies(), key=lambda x: (0 if not (x.getHideInUI()) else 1, safeStr(x.getName()).upper())):
+            for curSec in sorted(self._ctable.getAllCurrencies(), key=lambda x: (0 if not (x.getHideInUI()) else 1, safeStr(x.getName()).upper())):
                 # noinspection PyUnresolvedReferences
                 if curSec.getCurrencyType() != CurrencyType.Type.SECURITY: continue
                 # if curSec.getHideInUI() and not self.securityFilter.getIncludeHiddenSecurities(): continue
                 securityList.append(curSec)
-            self.baseSecurityList = securityList
+            self._baseSecurityList = securityList
 
             self.recreateJCheckBoxList()
             self.recreateJCheckBoxListPnl()
@@ -3628,7 +3677,7 @@ Visit: %s (Author's site)
         def selectSecurities(self, lForceAll=False):
 
             if len(self.saveSelectedSecUUIDList) < 1 and not lForceAll: return False
-            listModel = self.baseSecurityList
+            listModel = self._baseSecurityList
             if len(listModel) < 1: return False
             securitiesToSelect = []
 
@@ -3688,7 +3737,7 @@ Visit: %s (Author's site)
 
             self.loadDataModel()
 
-            self.saveSelectedSecUUIDList = parameters.getSubset(loadKey)        # type: SyncRecord
+            self.saveSelectedSecUUIDList = parameters.getSubset(loadKey)                                                # type: SyncRecord
 
             result = self.selectSecurities(lForceAll=self.securityFilter.getAutoSelectMode())
             return result
@@ -3700,12 +3749,12 @@ Visit: %s (Author's site)
             self.vertical = False
             self.showKey = True
             self.title = title
-            self.popupTableData = None                  # type: {}
+            self.popupTableData = None                                                                                  # type: {}
             self.currency = None
-            self.settings = None            # type: SyncRecord
+            self.settings = None                                                                                        # type: SyncRecord
             self.sectionMap = HashMap()
-            self.timeData = None            # type: TimeSeriesCollection
-            self.lastTimeSeries = None      # type: TimeSeries
+            self.timeData = None                                                                                        # type: TimeSeriesCollection
+            self.lastTimeSeries = None                                                                                  # type: TimeSeries
             self.show3D = True
             self.rateFormatString = None
             self.yAxisLabel = None
@@ -3733,6 +3782,7 @@ Visit: %s (Author's site)
         def setPopupTableData(self, _tableData): self.popupTableData = _tableData
         def getPopupTableData(self): return self.popupTableData
         def getCurrency(self): return self.currency
+        def setCurrency(self, newCurrency): self.currency = newCurrency
         def setSettings(self, settings): self.settings = settings
         def getSettings(self): return self.settings
 
@@ -3792,7 +3842,7 @@ Visit: %s (Author's site)
                 self.name = String(name)
                 self.details = details
                 self.uri = uri
-                self.currency = currency
+                self.wr_currency = WeakReference(currency)
 
             def toString(self): return self.name
 
@@ -3813,14 +3863,14 @@ Visit: %s (Author's site)
     # class MyCurrencyType:
     #     def __init__(self, name, decimalPlaces, prefix, suffix, specialLabel, dec):
     #         self.name = name
-    #         self.decimalPlaces = decimalPlaces
+    #         self._decimalPlaces = decimalPlaces
     #         self.prefix = prefix
     #         self.suffix = suffix
     #         self.specialLabel = specialLabel
-    #         self.dec = dec
+    #         self._dec = dec
     #
     #     def getComma(self):
-    #         if self.dec != ".": return "."
+    #         if self._dec != ".": return "."
     #         return ","
     #
     #         specialFormat = "#,##0.00%"      # Gets used by DecimalFormat()
@@ -3862,8 +3912,8 @@ Visit: %s (Author's site)
             FORMATS =  ["str",       "val_long",            "val_long",          "pct",                 "pct",                   "price",           "price",         "pct"]
 
             def __init__(self, base, dec):
-                self.base = base
-                self.dec = dec
+                self._base = base
+                self._dec = dec
                 self.startDate = None
                 self.endDate = None
                 self.startPrice = None
@@ -3871,10 +3921,10 @@ Visit: %s (Author's site)
                 self.portfolioStartValue = None
                 self.portfolioEndValue = None
                 self.portfolioValueChange = None
-                self.securityObjs = []          # type: [MySecurityPerformanceGraph.StoreSecurityRow]
+                self.securityObjs = []                                                                                  # type: [MySecurityPerformanceGraph.StoreSecurityRow]
 
-            def getPortfolioStartValueFancy(self): return self.base.formatFancy(self.portfolioStartValue, self.dec)
-            def getPortfolioEndValueFancy(self): return self.base.formatFancy(self.portfolioEndValue, self.dec)
+            def getPortfolioStartValueFancy(self): return self._base.formatFancy(self.portfolioStartValue, self._dec)
+            def getPortfolioEndValueFancy(self): return self._base.formatFancy(self.portfolioEndValue, self._dec)
 
             def storeSecurityRow(self, secObj):
                 # type: (MySecurityPerformanceGraph.StoreSecurityRow) -> None
@@ -3916,22 +3966,22 @@ Visit: %s (Author's site)
 
         def __init__(self, title=None):
             super(self.__class__, self).__init__()
-            self.renamedConfigPanel = None              # type: JPanel
-            self.dateRanger = None                      # type: MyDateRangeChooser
-            self.intervalChoice = None                  # type: IntervalChooser
-            self.displayDataChoice = None               # type: DisplayDataOptionChooser
-            self.rebaseChoice = None                    # type: RebasePerformanceChooser
-            self.percentageChoice = None                # type: PercentageOrPriceChooser
-            self.includeHiddenSecuritiesChoice = None   # type: IncludeHiddenSecuritiesChooser
-            self.showPopupTableChoice = None            # type: ShowPopupTableChooser
-            # self.securityListChoice = None            # type: JList
-            self.securityFilter = None                  # type: SecurityFilterPanel
-            self.securityListChoiceJCB = None           # type: SecurityChooser
+            self.renamedConfigPanel = None                                                                              # type: JPanel
+            self._dateRanger = None                                                                                     # type: MyDateRangeChooser
+            self.intervalChoice = None                                                                                  # type: IntervalChooser
+            self.displayDataChoice = None                                                                               # type: DisplayDataOptionChooser
+            self.rebaseChoice = None                                                                                    # type: RebasePerformanceChooser
+            self.percentageChoice = None                                                                                # type: PercentageOrPriceChooser
+            self.includeHiddenSecuritiesChoice = None                                                                   # type: IncludeHiddenSecuritiesChooser
+            self.showPopupTableChoice = None                                                                            # type: ShowPopupTableChooser
+            # self.securityListChoice = None                                                                            # type: JList
+            self.securityFilter = None                                                                                  # type: SecurityFilterPanel
+            self.securityListChoiceJCB = None                                                                           # type: SecurityChooser
             self.suppressMessages = False
-            self.book = MySecurityPerformanceGraph.moneydanceContext.getCurrentAccountBook()
-            self.ctable = self.book.getCurrencies()
-            self.base = self.book.getCurrencies().getBaseType()
-            self.dec = MySecurityPerformanceGraph.moneydanceContext.getPreferences().getDecimalChar()
+            self._book = MySecurityPerformanceGraph.moneydanceContext.getCurrentAccountBook()
+            self._ctable = self._book.getCurrencies()
+            self._base = self._book.getCurrencies().getBaseType()
+            self._dec = MySecurityPerformanceGraph.moneydanceContext.getPreferences().getDecimalChar()
             if title is not None: MySecurityPerformanceGraph.setTitle(title)
 
         def getName(self): return MySecurityPerformanceGraph.getTitle()
@@ -3947,7 +3997,7 @@ Visit: %s (Author's site)
 
             if reset or currentSettings is None or currentSettings.isEmpty():
                 newSettings = SyncRecord()
-                newSettings.put(DateRangeOption.CONFIG_KEY, DateRangeChooser.DR_YEAR_TO_DATE)
+                newSettings.put(DateRangeOption.CONFIG_KEY, DateRangeOption.DR_YEAR_TO_DATE.getResourceKey())
                 newSettings.put(self.PARAM_GROUP_BY, "m")
                 return newSettings
 
@@ -3961,7 +4011,7 @@ Visit: %s (Author's site)
 
             myPrint("DB","Loaded settings now: %s" %(loadedSettings))
 
-            self.dateRanger.loadFromParameters(loadedSettings)
+            self._dateRanger.loadFromParameters(loadedSettings)
 
             if loadedSettings.containsKey(self.PARAM_GROUP_BY):
                 self.intervalChoice.selectFromParams(loadedSettings.getStr(self.PARAM_GROUP_BY, ""))
@@ -3998,7 +4048,7 @@ Visit: %s (Author's site)
                 self.renamedConfigPanel = JPanel(GridBagLayout())
                 self.renamedConfigPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8))
 
-            self.dateRanger = MyDateRangeChooser(MySecurityPerformanceGraph.moneydanceContext.getUI())
+            self._dateRanger = MyDateRangeChooser(MySecurityPerformanceGraph.moneydanceContext.getUI())
             self.loadSettingsFromPreferences()
 
         def getConfigPanel(self, reset):
@@ -4019,9 +4069,9 @@ Visit: %s (Author's site)
 
             self.securityFilter = SecurityFilterPanel(MySecurityPerformanceGraph.moneydanceContext, self)
 
-            self.securityListChoiceJCB = SecurityChooser(MySecurityPerformanceGraph.moneydanceContext, self.ctable, self.securityFilter)
+            self.securityListChoiceJCB = SecurityChooser(MySecurityPerformanceGraph.moneydanceContext, self._ctable, self.securityFilter)
 
-            # self.securityListChoice = MyJList(MySecurityPerformanceGraph.moneydanceContext, self.ctable, self.includeHiddenSecuritiesChoice, [])
+            # self.securityListChoice = MyJList(MySecurityPerformanceGraph.moneydanceContext, self._ctable, self.includeHiddenSecuritiesChoice, [])
             # self.securityListChoice.setBackground(MySecurityPerformanceGraph.moneydanceContext.getUI().getColors().listBackground)
             # self.securityListChoice.setCellRenderer(MyJListRenderer())
             # self.securityListChoice.setFixedCellHeight(self.securityListChoice.getFixedCellHeight()+30)
@@ -4034,12 +4084,12 @@ Visit: %s (Author's site)
 
             y = 0
             if isinstance(self.renamedConfigPanel, JPanel): pass
-            self.renamedConfigPanel.add(self.dateRanger.getChoiceLabel(), GridC.getc(1, y).label())
-            self.renamedConfigPanel.add(self.dateRanger.getChoice(), GridC.getc(2, y).field());        y += 1
-            self.renamedConfigPanel.add(self.dateRanger.getStartLabel(), GridC.getc(1, y).label())
-            self.renamedConfigPanel.add(self.dateRanger.getStartField(), GridC.getc(2, y).field());    y += 1
-            self.renamedConfigPanel.add(self.dateRanger.getEndLabel(), GridC.getc(1, y).label())
-            self.renamedConfigPanel.add(self.dateRanger.getEndField(), GridC.getc(2, y).field());      y += 1
+            self.renamedConfigPanel.add(self._dateRanger.getChoiceLabel(), GridC.getc(1, y).label())
+            self.renamedConfigPanel.add(self._dateRanger.getChoice(), GridC.getc(2, y).field());        y += 1
+            self.renamedConfigPanel.add(self._dateRanger.getStartLabel(), GridC.getc(1, y).label())
+            self.renamedConfigPanel.add(self._dateRanger.getStartField(), GridC.getc(2, y).field());    y += 1
+            self.renamedConfigPanel.add(self._dateRanger.getEndLabel(), GridC.getc(1, y).label())
+            self.renamedConfigPanel.add(self._dateRanger.getEndField(), GridC.getc(2, y).field());      y += 1
 
             self.renamedConfigPanel.add(JLabel(UiUtil.getLabelText((MySecurityPerformanceGraph.moneydanceContext.getUI()), "graph_groupby")), GridC.getc(1, y).label())
             self.renamedConfigPanel.add(self.intervalChoice, GridC.getc(2, y).field());                y += 1
@@ -4116,7 +4166,7 @@ Visit: %s (Author's site)
                     #     self.filterSecurity.setSelectedIndex(-1)
 
             myActionListener = MyActionListener(self)
-            self.dateRanger.setSpecialListener(myActionListener)
+            self._dateRanger.setSpecialListener(myActionListener)
             for c in self.renamedConfigPanel.getComponents():
                 if isinstance(c, (JComboBox, JCheckBox)): c.addActionListener(myActionListener)
                 if isinstance(c, (JPanel)):
@@ -4157,7 +4207,7 @@ Visit: %s (Author's site)
 
             self.securityListChoiceJCB.storeToParameters(graphParameters)
 
-            self.dateRanger.storeToParameters(graphParameters)
+            self._dateRanger.storeToParameters(graphParameters)
 
             graphParameters.put(DisplayDataOptionChooser.KEY, self.displayDataChoice.getSelectedItem())
             graphParameters.put(RebasePerformanceChooser.KEY, self.rebaseChoice.getSelectedItem())
@@ -4165,14 +4215,14 @@ Visit: %s (Author's site)
 
             GraphDataSet.resetColors()
             graphData = MySecurityPerformanceGraph.generateGraph(MySecurityPerformanceGraph.moneydanceContext.getUI(),
-                                                                      self.dec,
+                                                                      self._dec,
                                                                       self.includeHiddenSecuritiesChoice,
                                                                       self.displayDataChoice,
                                                                       self.rebaseChoice,
                                                                       self.percentageChoice,
                                                                       self.securityListChoiceJCB.getSelectedValues(),
                                                                       self.intervalChoice.getSelectedInterval(),
-                                                                      self.dateRanger)
+                                                                      self._dateRanger)
             if graphData is None:
                 if not self.suppressMessages:
                     MySecurityPerformanceGraph.moneydanceContext.getUI().showErrorMessage(MySecurityPerformanceGraph.moneydanceContext.getUI().getStr("nothing_to_graph"))
@@ -4211,8 +4261,8 @@ Visit: %s (Author's site)
             beginDate = dateRange.getStartDateInt()
             endDate = dateRange.getEndDateInt()
 
-            graphData = None   # type: MyGraphSet
-            tableData = None   # type: MySecurityPerformanceGraph.StorePopupTableData
+            graphData = None                                                                                            # type: MyGraphSet
+            tableData = None                                                                                            # type: MySecurityPerformanceGraph.StorePopupTableData
 
             myPrint("DB","selectedSecurities:", selectedSecurities)
 
@@ -4239,7 +4289,7 @@ Visit: %s (Author's site)
                 if debug:
                     for checkDateKey in dates: myPrint("B","dates: %s" %(checkDateKey), dates[checkDateKey])
 
-                intervalUtil = TimeIntervalUtil()   # type: TimeIntervalUtil
+                intervalUtil = TimeIntervalUtil()                                                                       # type: TimeIntervalUtil
                 firstInterval = intervalUtil.getIntervalStart(beginDate, interval)
                 lastInterval = intervalUtil.getIntervalEnd(endDate, interval)
                 numIntervals = intervalUtil.getNumIntervals(firstInterval, lastInterval, interval)
@@ -4345,8 +4395,8 @@ Visit: %s (Author's site)
 
                         startBal = AccountUtil.getBalanceAsOfDate(_book, secAcct, beginDate)
                         endBal = AccountUtil.getBalanceAsOfDate(_book, secAcct, endDate)
-                        startValue = CurrencyTable.convertValue(startBal, sec, base, beginDate)
-                        endValue = CurrencyTable.convertValue(endBal, sec, base, endDate)
+                        startValue = CurrencyUtil.convertValue(startBal, sec, base, beginDate)
+                        endValue = CurrencyUtil.convertValue(endBal, sec, base, endDate)
 
                         thisSecurityTotalStartValue += startValue
                         thisSecurityTotalEndValue += endValue
@@ -4469,7 +4519,7 @@ Visit: %s (Author's site)
                     for i in range(0, len(yValues_percentagePerformance)):
                         if yValues_percentagePerformance[i] is not None:
                             # yValues_value[i] = (yValues_price[i] * yValues_balances[i])
-                            yValues_value_new[i] = base.getDoubleValue(CurrencyTable.convertValue(sec.getLongValue(yValues_balances[i]), sec, base, intervals[i]))
+                            yValues_value_new[i] = base.getDoubleValue(CurrencyUtil.convertValue(sec.getLongValue(yValues_balances[i]), sec, base, intervals[i]))
 
                     # myPrint("DB", "%s: yValues_value:" %(sec), yValues_value)
                     myPrint("DB", "%s: yValues_value_new:" %(sec), yValues_value_new)
@@ -4501,7 +4551,7 @@ Visit: %s (Author's site)
                     avgBalStr = resources.getStr("graph_avg") + " " + StringUtils.formatRate(totalRate / used, dec)
 
                     if graphData is None:
-                        graphData = MyGraphSet(MySecurityPerformanceGraph.getTitle())    # type: MyGraphSet
+                        graphData = MyGraphSet(MySecurityPerformanceGraph.getTitle())                                   # type: MyGraphSet
 
                         graphOptions = "(graph options: "
 
@@ -4609,7 +4659,7 @@ Visit: %s (Author's site)
                 datesBySecurity[_key] = TreeSet(snapshotComparator)   # Note: single thread, so no need for: SortedSet s = Collections.synchronizedSortedSet(new TreeSet(...));
 
             for sec in securities:
-                snaps = sec.getSnapshots()    # type: [CurrencySnapshot]
+                snaps = sec.getSnapshots()                                                                              # type: [CurrencySnapshot]
 
                 if lGetOverallDates:
                     if snaps.size() > 0:
@@ -4893,10 +4943,8 @@ Visit: %s (Author's site)
 
         try:
             # NOTE - .dispose() - The windowClosed event should set .isActiveInMoneydance False and .removeAppEventListener()
-            if not SwingUtilities.isEventDispatchThread():
-                SwingUtilities.invokeLater(GenericDisposeRunnable(_theFrame))
-            else:
-                _theFrame.dispose()
+            SwingUtilities.invokeLater(GenericDisposeRunnable(_theFrame))
+
         except:
             myPrint("B","Error. Final dispose failed....?")
             dump_sys_error_to_md_console_and_errorlog()
@@ -4935,19 +4983,19 @@ Visit: %s (Author's site)
             # MD doesn't call .unload() or .cleanup(), so if uninstalled I need to close myself
             fm, pyObject = self.getMyself()
             myPrint("DB", "Checking myself: %s : %s" %(fm, pyObject))
-            # if (fm is None or pyObject is None) and appEvent != "md:app:exiting":
-            if (fm is None or (self.theFrame.isRunTimeExtension and pyObject is None)) and appEvent != "md:app:exiting":
+            if (((fm is None and "__file__" not in globals()) or (self.theFrame.isRunTimeExtension and pyObject is None))
+                    and appEvent != AppEventManager.APP_EXITING):
                 myPrint("B", "@@ ALERT - I've detected that I'm no longer installed as an extension - I will deactivate.. (switching event code to :close)")
                 appEvent = "%s:customevent:close" %self.myModuleID
 
             # I am only closing Extension when a new Dataset is opened.. I was calling it on MD Close/Exit, but it seemed to cause an Exception...
-            if (appEvent == "md:file:closing"
-                    or appEvent == "md:file:closed"
-                    or appEvent == "md:file:opening"
-                    or appEvent == "md:app:exiting"):
+            if (appEvent == AppEventManager.FILE_CLOSING
+                    or appEvent == AppEventManager.FILE_CLOSED
+                    or appEvent == AppEventManager.FILE_OPENING
+                    or appEvent == AppEventManager.APP_EXITING):
                 myPrint("DB","@@ Ignoring MD handleEvent: %s" %(appEvent))
 
-            elif (appEvent == "md:file:opened" or appEvent == "%s:customevent:close" %self.myModuleID):
+            elif (appEvent == AppEventManager.FILE_OPENED or appEvent == "%s:customevent:close" %self.myModuleID):
                 if debug:
                     myPrint("DB","MD event %s triggered.... Will call GenericWindowClosingRunnable (via the Swing EDT) to push a WINDOW_CLOSING Event to %s to close itself (while I exit back to MD quickly) ...." %(appEvent, self.myModuleID))
                 else:
@@ -5003,7 +5051,6 @@ Visit: %s (Author's site)
             else:
                 self.renderer.setHorizontalAlignment(JLabel.RIGHT)
             return self.renderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col)
-
 
     class MyTableColumnModelListener(TableColumnModelListener):
         ## noinspection PyUnusedLocal
@@ -5065,6 +5112,7 @@ Visit: %s (Author's site)
 
             self.validateLoadSavedColumnWidths()
             self.getColumnModel().addColumnModelListener(MyTableColumnModelListener())
+            self.getTableHeader().setReorderingAllowed(False)
 
         def validateLoadSavedColumnWidths(self):
             tcm = self.getColumnModel()
@@ -5133,12 +5181,12 @@ Visit: %s (Author's site)
             def __init__(self, callingClass):
                 super(self.__class__, self).__init__()
                 self.callingClass = callingClass
-                self.base = self.callingClass.moneydanceContext.getCurrentAccount().getBook().getCurrencies().getBaseType()
-                self.dec = self.callingClass.moneydanceContext.getPreferences().getDecimalChar()
+                self._base = self.callingClass.moneydanceContext.getCurrentAccount().getBook().getCurrencies().getBaseType()
+                self._dec = self.callingClass.moneydanceContext.getPreferences().getDecimalChar()
 
             def setValue(self, value):
                 if value is None: return
-                self.setText(self.base.formatFancy(value, self.dec))
+                self.setText(self._base.formatFancy(value, self._dec))
                 if value < 0.0:
                     self.setForeground(self.callingClass.mdGUI.getColors().budgetAlertColor)
                 else:
@@ -5149,8 +5197,8 @@ Visit: %s (Author's site)
             def __init__(self, callingClass):
                 super(self.__class__, self).__init__()
                 self.callingClass = callingClass
-                self.base = self.callingClass.moneydanceContext.getCurrentAccount().getBook().getCurrencies().getBaseType()
-                self.dec = self.callingClass.moneydanceContext.getPreferences().getDecimalChar()
+                self._base = self.callingClass.moneydanceContext.getCurrentAccount().getBook().getCurrencies().getBaseType()
+                self._dec = self.callingClass.moneydanceContext.getPreferences().getDecimalChar()
 
             def setValue(self, value):
                 if value is None: return
@@ -5161,8 +5209,8 @@ Visit: %s (Author's site)
             def __init__(self, callingClass):
                 super(self.__class__, self).__init__()
                 self.callingClass = callingClass
-                self.base = self.callingClass.moneydanceContext.getCurrentAccount().getBook().getCurrencies().getBaseType()
-                self.dec = self.callingClass.moneydanceContext.getPreferences().getDecimalChar()
+                self._base = self.callingClass.moneydanceContext.getCurrentAccount().getBook().getCurrencies().getBaseType()
+                self._dec = self.callingClass.moneydanceContext.getPreferences().getDecimalChar()
 
             def setValue(self, value):
                 if value is None: return
@@ -5218,15 +5266,15 @@ Visit: %s (Author's site)
 
             def generateToolTip(self, dataset, series, item):
                 if isinstance(dataset, AbstractSeriesDataset):
-                    asData = dataset                                            # type: AbstractSeriesDataset
-                    key = asData.getSeriesKey(series)                           # type: Comparable
+                    asData = dataset                                                                                    # type: AbstractSeriesDataset
+                    key = asData.getSeriesKey(series)                                                                   # type: Comparable
                     lgs = self.callingClass.getGraphSet().getDetailsByName(String.valueOf(key))
                     if lgs is None: return None
                     sb = StringBuilder()
                     sb.append(lgs.name)
                     if isinstance(dataset, TimeSeriesCollection):
                         timeSeries = dataset.getSeries(series)
-                        regularTimePeriod = timeSeries.getTimePeriod(item)      # type: RegularTimePeriod
+                        regularTimePeriod = timeSeries.getTimePeriod(item)                                              # type: RegularTimePeriod
                         if regularTimePeriod is not None:
                             sb.append("; ")
                             sb.append(regularTimePeriod)
@@ -5236,10 +5284,10 @@ Visit: %s (Author's site)
                             sb.append("; ")
                             sb.append(self.callingClass.dateFormat.format(Date(timeInMs.longValue())))
                     sb.append("; ")
-                    currency = lgs.currency                                     # type: CurrencyType
+                    currency = lgs.wr_currency.get()                                                                    # type: CurrencyType
                     if currency is not None:
                         extraTxt = currency.getParameter(MySecurityPerformanceGraph.CURRENCY_LABEL_KEY, "")
-                        sb.append(extraTxt + " " + currency.formatFancy(Math.round(dataset.getYValue(series, item)), self.callingClass.dec))
+                        sb.append(extraTxt + " " + currency.formatFancy(Math.round(dataset.getYValue(series, item)), self.callingClass._dec))
                     else:
                         sb.append(self.callingClass.rateFormat.format(dataset.getYValue(series, item)))
                     return sb.toString()
@@ -5250,24 +5298,28 @@ Visit: %s (Author's site)
 
             def __init__(self, curr, callingClass):
                 # type: (CurrencyType, MyGraphViewer) -> None
-                self.curr = curr
+                self.wr_curr = WeakReference(curr)
                 self.callingClass = callingClass
 
             # noinspection PyUnusedLocal
             def parse(self, text, pos):
-                return Long(self.curr.parse(text, self.callingClass.this.dec))
+                curr = self.wr_curr.get()                                                                               # type: CurrencyType
+                if isinstance(curr, CurrencyType): pass
+                return Long(curr.parse(text, self.callingClass.this.dec))
 
             # noinspection PyUnusedLocal
             def format(self, number, toAppendTo, pos):
                 # type: ((long, float), StringBuffer, FieldPosition) -> StringBuffer
+                curr = self.wr_curr.get()                                                                               # type: CurrencyType
+                if isinstance(curr, CurrencyType): pass
                 if toAppendTo is None:
                     toAppendTo = StringBuffer()
                 if isinstance(number, long):
-                    toAppendTo.append(self.curr.formatFancy(number, self.callingClass.dec))
-                    # toAppendTo.append(self.curr.formatSemiFancy(number, self.callingClass.dec))
+                    toAppendTo.append(curr.formatFancy(number, self.callingClass._dec))
+                    # toAppendTo.append(curr.formatSemiFancy(number, self.callingClass._dec))
                 elif isinstance(number, float):
-                    toAppendTo.append(self.curr.formatFancy(Math.round(number), self.callingClass.dec))
-                    # toAppendTo.append(self.curr.formatSemiFancy(Math.round(number), self.callingClass.dec))
+                    toAppendTo.append(curr.formatFancy(Math.round(number), self.callingClass._dec))
+                    # toAppendTo.append(curr.formatSemiFancy(Math.round(number), self.callingClass._dec))
                 else:
                     raise Exception("CHECK DATA TYPES")
                 return toAppendTo
@@ -5279,11 +5331,11 @@ Visit: %s (Author's site)
 
             self.mdGUI = mdGUI
 
-            self.mainChart = None           # type: JFreeChart
-            self.mainChartPanel = None      # type: ChartPanel
-            self.graphSet = None            # type: MyGraphSet
+            self.mainChart = None                                                                                       # type: JFreeChart
+            self.mainChartPanel = None                                                                                  # type: ChartPanel
+            self.graphSet = None                                                                                        # type: MyGraphSet
 
-            self.dec = mdGUI.getPreferences().getDecimalChar()
+            self._dec = mdGUI.getPreferences().getDecimalChar()
             self.dateFormat = mdGUI.getPreferences().getShortDateFormatter()
             self.colors = mdGUI.getColors()
 
@@ -5291,14 +5343,14 @@ Visit: %s (Author's site)
             self.setOpaque(True)
             self.setBackground((mdGUI.getColors()).defaultBackground)
             self.graphGridColor = GradientPaint(0.0, 0.0, self.colors.homePageBG, 0.0, 700.0, self.colors.homePageAltBG)
-            self.rateFormat = DecimalFormat("#" + self.dec + "######")
+            self.rateFormat = DecimalFormat("#" + self._dec + "######")
             self.xyToolTipGenerator = self.TimeSeriesToolTipGenerator(self)
 
         def setGraph(self, graphSet):
             # type: (MyGraphSet) -> None
             self.graphSet = graphSet
 
-            overrideFormatString = graphSet.getRateFormatString(self.dec)
+            overrideFormatString = graphSet.getRateFormatString(self._dec)
             if overrideFormatString is not None:
                 self.rateFormat = DecimalFormat(overrideFormatString)
 
@@ -5367,7 +5419,7 @@ Visit: %s (Author's site)
                 if mainModel.getSeriesCount() > 0:
                     mainKey = mainModel.getSeriesKey(0)
                     if curr is None and isinstance(mainKey, MyGraphSet.LineGraphSection):
-                        curr = mainKey.currency
+                        curr = mainKey.wr_currency.get()
                     yAxis = plot.getRangeAxis()
                     if curr is not None and isinstance(yAxis, NumberAxis):
                         yAxis.setNumberFormatOverride(MyGraphViewer.CurrencyNumberFormat(curr, self))
@@ -5383,7 +5435,7 @@ Visit: %s (Author's site)
                 for i in range(0, mainModel.getSeriesCount()):
                     s = mainModel.getSeries(i)
                     seriesItems = s.getItems()
-                    for item in seriesItems:                # type: TimeSeriesDataItem
+                    for item in seriesItems:                                                                            # type: TimeSeriesDataItem
                         # myPrint("B",item.getPeriod(), item.getValue(), item.getPeriod().getStart(), item.getPeriod().getEnd())
                         val = item.getValue()
                         if lowerValue is None or upperValue is None: lowerValue = upperValue = val
@@ -5422,8 +5474,12 @@ Visit: %s (Author's site)
 
                 if isinstance(existing, AbstractXYItemRenderer):
                     renderer = existing
-                    renderer.setBaseToolTipGenerator(self.xyToolTipGenerator)
-                    renderer.setBaseLegendTextPaint(self.colors.defaultTextForeground)
+                    if MD_REF.getBuild() < 5100:
+                        renderer.setBaseToolTipGenerator(self.xyToolTipGenerator)                                       # noqa
+                        renderer.setBaseLegendTextPaint(self.colors.defaultTextForeground)                              # noqa
+                    else:
+                        renderer.setDefaultToolTipGenerator(self.xyToolTipGenerator)
+                        renderer.setDefaultLegendTextPaint(self.colors.defaultTextForeground)
                     for i in range(mainModel.getSeriesCount()):
                         seriesPaint = colorEnum.nextColor()
                         renderer.setSeriesPaint(i, seriesPaint)
@@ -5431,8 +5487,12 @@ Visit: %s (Author's site)
                         renderer.setSeriesShape(i, MyGraphViewer.circleShape)
                         mainColors.put(mainModel.getSeriesKey(i), seriesPaint)
                 if isinstance(existing, XYLineAndShapeRenderer):
-                    existing.setBaseShapesVisible(True)
-                    existing.setBaseShapesFilled(True)
+                    if MD_REF.getBuild() < 5100:
+                        existing.setBaseShapesVisible(True)                                                             # noqa
+                        existing.setBaseShapesFilled(True)                                                              # noqa
+                    else:
+                        existing.setDefaultShapesVisible(True)
+                        existing.setDefaultShapesFilled(True)
 
                 plot.setDomainGridlinePaint(self.graphGridColor)
                 plot.setRangeGridlinePaint(self.graphGridColor)
@@ -5482,7 +5542,7 @@ Visit: %s (Author's site)
         def paintComponent(self, g):
             # type: (Graphics) -> None
             if isinstance(g, Graphics2D):
-                g2 = g      # type: Graphics2D
+                g2 = g                                                                                                  # type: Graphics2D
                 oldPaint = g2.getPaint()
                 g2.setPaint(self.colors.graphBGGradient)
                 g2.fill(self.getBounds(self.paintBounds))
@@ -5491,8 +5551,8 @@ Visit: %s (Author's site)
 
         def saveGraph(self, outStream):
             # type: (OutputStream) -> None
-            img = self.getGraphAsImage()     # type: BufferedImage
-            ChartUtilities.writeBufferedImageAsPNG(outStream, img)
+            img = self.getGraphAsImage()                                                                                # type: BufferedImage
+            ChartUtils.writeBufferedImageAsPNG(outStream, img)
 
         def getGraphAsImage(self):
             # type: (BufferedImage) ->  BufferedImage
@@ -5665,8 +5725,8 @@ Visit: %s (Author's site)
             self._saveLocKey = None
 
             if float(self.moneydanceContext.getBuild()) >= 3051 and MD_EXTENSION_LOADER is not None:
-                self.moneydanceExtensionLoader = MD_EXTENSION_LOADER  # This is the class loader for the whole extension
-                myPrint("DB", "... Build is >= 3051 so using moneydance_extension_loader: %s" %(self.moneydanceExtensionLoader))
+                self.moneydanceExtensionLoader = MD_EXTENSION_LOADER  # This is the class loader (or later actually FeatureModule instance) for the whole extension
+                myPrint("DB", "... Build is >= 3051 so using moneydance_extension_loader or moneydance_this_fm: %s" %(self.moneydanceExtensionLoader))
             else:
                 self.moneydanceExtensionLoader = None
 
@@ -5750,7 +5810,7 @@ Visit: %s (Author's site)
 
             self.setRememberSizeLocationKeys("gui.%s_size" %(self.moduleID), "gui.%s_location" %(self.moduleID), Dimension(1200, 1200))
 
-            self.popupTableDialog = None        # type: MyPopupTableDialog
+            self.popupTableDialog = None                                                                                # type: MyPopupTableDialog
 
         def isPreviewBuild(self):
             if self.moneydanceExtensionLoader is not None:
@@ -5880,7 +5940,7 @@ Visit: %s (Author's site)
         class WindowListener(WindowAdapter):
 
             def __init__(self, theFrame, callingClass):
-                self.theFrame = theFrame        # type: MyJFrame
+                self.theFrame = theFrame                                                                                # type: MyJFrame
                 self.callingClass = callingClass
 
             def windowClosing(self, evt):                                                                               # noqa
@@ -5917,6 +5977,34 @@ Visit: %s (Author's site)
                 myPrint("DB", "Removing Preferences listener:", self.callingClass)
                 self.callingClass.moneydanceContext.getPreferences().removeListener(self.callingClass)
 
+                myPrint("DB", "Clearing out references to ensure no memory leaks...")
+                # Ensuring no memory leaks after GUI elements closed....
+                if self.callingClass.popupTableDialog is not None:
+                    self.callingClass.popupTableDialog.goAwayNow()
+                    self.callingClass.popupTableDialog = None
+                self.callingClass.generator = None
+                self.callingClass.frame = None
+                self.callingClass.info = None
+                self.callingClass.prefs = None
+
+
+                if self.callingClass.viewer is not None:
+                    self.callingClass.viewer.mainChart = None
+                    self.callingClass.viewer.mainChartPanel = None
+                    self.callingClass.viewer.graphSet = None
+                    self.callingClass.viewer.removeAll()
+                    myPrint("DB", "... also cleared out references to mainChart, mainPanel, graphSet, frame panel etc....")
+
+                self.callingClass.viewer = None
+
+                self.callingClass.doneButton = None
+                self.callingClass.editButton = None
+                self.callingClass.printButton = None
+                self.callingClass.saveButton = None
+                self.callingClass.copyButton = None
+                self.callingClass.STATUS_LABEL = None
+
+                myPrint("DB", "Executing cleanup_actions() ....")
                 cleanup_actions(self.theFrame)
 
         def editParameters(self):
@@ -5982,11 +6070,12 @@ Visit: %s (Author's site)
 
         def getGraph(self): return self.viewer.getGraphSet()
 
-    class MyReportSpec(ReportSpec):
-        def __init__(self, *args):
-            super(self.__class__, self).__init__(*args)
-
-        def getReportGenerator(self): return None
+    if isMemReportsUpgradedBuild():
+        MyReportSpec = ReportSpec
+    else:
+        class MyReportSpec(ReportSpec):
+            def __init__(self, *args): super(self.__class__, self).__init__(*args)
+            def getReportGenerator(self): return None
 
     try:
         class MainAppRunnable(Runnable):
@@ -5998,11 +6087,11 @@ Visit: %s (Author's site)
                 myPrint("DB", "In MainAppRunnable()", inspect.currentframe().f_code.co_name, "()")
                 myPrint("DB", "SwingUtilities.isEventDispatchThread() = %s" %(SwingUtilities.isEventDispatchThread()))
 
-                book = moneydance.getCurrentAccount().getBook()
+                book = MD_REF.getCurrentAccountBook()
 
-                reportSpec = MyReportSpec(book)   # type: ReportSpec
+                reportSpec = MyReportSpec(book)                                                                         # type: ReportSpec
                 reportSpec.setName(GlobalVars.Strings.GRAPH_NAME)
-                reportSpec.setReportID(myModuleID)
+                #reportSpec.setReportID(myModuleID)
                 reportSpec.setMemorized(False)
 
                 theParams = SyncRecord()
@@ -6010,12 +6099,15 @@ Visit: %s (Author's site)
                         and isinstance(GlobalVars.extn_param_graph_params_SPG, (str, unicode))\
                         and len(GlobalVars.extn_param_graph_params_SPG)>2\
                         and GlobalVars.extn_param_graph_params_SPG.strip().startswith(":"):
-                    theParams.readSet(StringReader(GlobalVars.extn_param_graph_params_SPG))
+                    if isKotlinCompiledBuild():
+                        theParams.readSet(Buffer().writeUtf8(GlobalVars.extn_param_graph_params_SPG))
+                    else:
+                        theParams.readSet(StringReader(GlobalVars.extn_param_graph_params_SPG))
                     myPrint("DB","Graph parameters successfully loaded: %s" %(theParams))
                     reportSpec.setReportParameters(theParams)
                 else:
                     myPrint("B","No graph parameters found (or invalid), resetting to defaults....")
-                    reportSpec.setReportParameters(None)
+                    reportSpec.setReportParameters(theParams)
 
                 if debug:
                     myPrint("B","---")
@@ -6026,7 +6118,7 @@ Visit: %s (Author's site)
 
                 # copies com.moneydance.apps.md.view.gui.GraphReportGenerator.showReport(ReportSpec, MoneydanceGUI) : void
 
-                # theGenerator = GraphReportGenerator.getGenerator(theReportSpec, MD_REF.getUI())			# type: GraphReportGenerator
+                # theGenerator = GraphReportGenerator.getGenerator(theReportSpec, MD_REF.getUI())			            # type: GraphReportGenerator
                 theGenerator = MySecurityPerformanceGraph(reportSpec.getName())
                 theGenerator.setGUI(MD_REF.getUI())
                 theGenerator.setSuppressMessages(True)

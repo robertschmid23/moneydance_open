@@ -11,84 +11,76 @@
 package com.moneydance.modules.features.debtinsights.ui.viewpanel;
 
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.event.MouseEvent;
 
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 import javax.swing.border.Border;
 
+import com.moneydance.apps.md.view.gui.MoneydanceLAF;
 import com.infinitekind.moneydance.model.Account;
 import com.infinitekind.moneydance.model.CurrencyType;
 import com.moneydance.awt.GridC;
-import com.moneydance.awt.JLinkLabel;
 import com.moneydance.modules.features.debtinsights.DebtAmountWrapper;
+import com.moneydance.modules.features.debtinsights.Main;
+import com.moneydance.modules.features.debtinsights.Util;
 import com.moneydance.modules.features.debtinsights.creditcards.CreditCardLimitMenuAction;
 import com.moneydance.modules.features.debtinsights.creditcards.CreditLimitType;
-import com.moneydance.modules.features.debtinsights.model.BetterCreditCardAccount;
+import com.moneydance.modules.features.debtinsights.ui.MyJLinkLabel;
 import com.moneydance.modules.features.debtinsights.ui.acctview.CreditCardAccountView;
 import com.moneydance.modules.features.debtinsights.ui.acctview.DebtAccountView;
 
 public class CreditCardViewPanel extends DebtViewPanel
 {
-//	private static final Logger log = LoggerFactory.getLogger(CreditCardViewPanel.class);
-	protected JLabel 	creditLimitTypeLbl;
-	protected JLabel creditTotalLbl;
+	protected JLabel creditLimitTypeLbl;
 	private CreditLimitType creditLimitType; // = CreditLimitType.CREDIT_LIMIT;
 	
-
 	protected CreditCardAccountView ccAccountView;
 
-	protected static final Border[] borders = {	DebtViewPanel.nameBorder,
-																							 DebtViewPanel.amountBorder,
-																							 DebtViewPanel.amountBorder};
-	
-	public CreditCardViewPanel(DebtAccountView ccAccountView,
-	        				Account.AccountType... acctTypes)
+	protected static final Border[] borders = {
+			DebtViewPanel.nameBorder,
+			DebtViewPanel.amountBorder,
+			DebtViewPanel.amountBorder};
+
+	public CreditCardViewPanel(DebtAccountView ccAccountView, Account.AccountType... acctTypes)								// noqa
 	{
-		super(ccAccountView);
+		super(true, ccAccountView);
+		setBorder(MoneydanceLAF.homePageBorder);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.moneydance.modules.features.debtinsights.BetterViewPanel#activate()
-	 */
 	@Override
 	protected void init()
 	{
 		super.init();
 		this.ccAccountView = (CreditCardAccountView) this.acctView;
-//		if (getCreditLimitType() == null) setCreditLimitType(CreditLimitType.CREDIT_LIMIT);
 
-		setCreditLimitType(CreditLimitType.fromInt(	prefs
-													.getIntSetting (this.ccAccountView.creditLimitTypePref, 
-																	CreditLimitType.CREDIT_LIMIT.ordinal())));
-		
-//		setCreditLimitType((prefType != null ?  prefType : CreditLimitType.CREDIT_LIMIT));
+		setCreditLimitType(CreditLimitType.fromInt(prefs.getIntSetting(Main.EXTN_MD_CCLIMIT_PREF_KEY,
+				CreditLimitType.CREDIT_LIMIT.ordinal())));
 	}
 
 	@Override
-	protected void addAcctRow(Account account, String sharesStr,
-	        					String balanceStr, long amt)
+	protected void addAcctRow(Account account, String sharesStr, String balanceStr, long amt, long balanceForCreditComponent)
 	{
-    //BetterCreditCardAccount acct = new BetterCreditCardAccount(account);
+		Util.logConsole(true, "widget: addAcctRow()");
+
 		String acctLabel = account.getAccountName();
 		int indentDepth = account.getDepth();
 
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		for (int i = 1; i < indentDepth; ++i)
 			sb.append(THREE_SPACE);
 		sb.append(acctLabel);
 		if (sb.length() <= 0) sb.append(SINGLE_SPACE);
 		acctLabel = sb.toString();
 
-		JLinkLabel nameLbl = new JLinkLabel(acctLabel, account, SwingConstants.LEFT);
-		
-		JComponent creditLimitDisplay = getCreditLimitType().getDisplayComponent(this, account, amt);
-		
-		JLinkLabel balanceLbl = new JLinkLabel(balanceStr, account, SwingConstants.RIGHT);
+		MyJLinkLabel nameLbl = new MyJLinkLabel(acctLabel, account, SwingConstants.LEFT);
+		JComponent creditLimitDisplay = getCreditLimitType().getDisplayComponent(this, account, balanceForCreditComponent);
+//		JComponent creditLimitDisplay = getCreditLimitType().getDisplayComponent(this, account, amt);
+		if (creditLimitDisplay != null) {
+			creditLimitDisplay.setFont(this.acctView.getMDGUI().getFonts().mono);
+		}
+
+		MyJLinkLabel balanceLbl = new MyJLinkLabel(balanceStr, account, SwingConstants.RIGHT);
+		balanceLbl.setFont(this.acctView.getMDGUI().getFonts().mono);
 
 		JComponent[] labels = {nameLbl, creditLimitDisplay, balanceLbl};
 		
@@ -97,25 +89,31 @@ public class CreditCardViewPanel extends DebtViewPanel
 			Color negFGColor = this.acctView.getMDGUI().getColors().negativeBalFG;
 			balanceLbl.setForeground(negFGColor);
 		}
+		if (amt > 0L && Main.getWidgetEnhancedColors())
+		{
+			Color posColor = Util.getPositiveGreen();
+			balanceLbl.setForeground(posColor);
+		}
 
 		for (int i=0; i < labels.length; i++)
 		{
 			if (labels[i] == null) continue;
 			
-			if (labels[i] instanceof JLinkLabel)
+			if (labels[i] instanceof MyJLinkLabel)
 			{
-				((JLinkLabel) labels[i]).addLinkListener(this);
-				((JLinkLabel) labels[i]).setDrawUnderline(false);
+				((MyJLinkLabel) labels[i]).addLinkListener(this);
+				((MyJLinkLabel) labels[i]).setDrawUnderline(false);
 			}
-			if (this.currentRow % 2 == 0)
-			{
-				Color bg = this.acctView.getMDGUI().getColors().homePageAltBG;
-				labels[i].setOpaque(true);				
-				labels[i].setBackground(bg);
-			}
+//			if (this.currentRow % 2 == 0)
+//			{
+//				Color bg = this.acctView.getMDGUI().getColors().homePageAltBG;
+//				labels[i].setOpaque(true);
+//				labels[i].setBackground(bg);
+//			}
+
 			labels[i].setBorder(borders[i]);
 			
-			GridC gridC = GridC.getc().xy(i+1,this.currentRow);
+			GridC gridC = GridC.getc().xy(i+1, this.currentRow);
 			if (i == 0)
 				gridC = gridC.wx(0.6F).fillx().west();
 			else
@@ -131,34 +129,32 @@ public class CreditCardViewPanel extends DebtViewPanel
 	@Override
 	protected void addLabelsToHeader()
 	{
-		Font font = getFont();
-		font = new Font(font.getName(), 1, font.getSize() + 2);
+		listPanel.add(this.headerLabel, GridC.getc().xy(0, 0).wx(0.6F).colspan(2).west());
 
 		this.creditLimitTypeLbl = new JLabel(" ", SwingConstants.RIGHT);
-		this.creditLimitTypeLbl.setFont(font);
-		this.creditLimitTypeLbl.setHorizontalTextPosition(SwingConstants.LEADING);
-		this.creditLimitTypeLbl.setIcon(this.acctView.getMDGUI()
-				.getImages()
-				.getIcon(SELECTOR));
+		this.creditLimitTypeLbl = new JLabel(" ", SwingConstants.RIGHT);
+		this.creditLimitTypeLbl.setFont(this.acctView.getMDGUI().getFonts().defaultText);
+		this.creditLimitTypeLbl.setBorder(amountBorder);
+		this.creditLimitTypeLbl.setForeground(this.acctView.getMDGUI().getColors().secondaryTextFG);
+		this.creditLimitTypeLbl.setHorizontalTextPosition(SwingConstants.RIGHT);
+		this.creditLimitTypeLbl.setIcon(this.acctView.getMDGUI().getImages().getIcon(SELECTOR));
 		this.creditLimitTypeLbl.addMouseListener(this);
-
-		listPanel.add(this.headerLabel, 
-				GridC.getc().xy(0, 0).wx(0.6F).colspan(2).west());
 		listPanel.add(this.creditLimitTypeLbl, GridC.getc().xy(2, 0).wx(0.2F).fillx().east());
+
 		listPanel.add(this.balTypeLabel, GridC.getc().xy(3, 0).wx(0.2F).fillx().east());
 		
 		this.currentRow++;	
 	}
 	
 	@Override
-	protected void setHeaderLabels(CurrencyType baseCurr, 
-									DebtAmountWrapper amountWrapper)
+	protected void setHeaderLabels(CurrencyType base,  DebtAmountWrapper amountWrapper)
 	{
-		super.setHeaderLabels(baseCurr, amountWrapper);
+		super.setHeaderLabels(base, amountWrapper);
 //		if (this.ccAccountView ==null) this.ccAccountView = (CreditCardAccountView) acctView;
 		this.creditLimitTypeLbl.setText(getCreditLimitType().getMenuName()); 
 	}
 	
+
 	@Override
 	protected JLabel getAccountTypeSpecificLabel()
 	{
@@ -190,6 +186,7 @@ public class CreditCardViewPanel extends DebtViewPanel
 	@Override
 	public void mousePressed(MouseEvent evt)
 	{
+		Util.logConsole(true, "Mouse: mousePressed...." + evt.getSource());
 		if (evt.getSource() == this.balTypeLabel)
 		{
 			showBalanceTypePopup();
@@ -213,10 +210,21 @@ public class CreditCardViewPanel extends DebtViewPanel
 	@Override
 	public String getSubAcctExpansionKey()
 	{
-		return "gui_expand_subaccts";
+        Util.logConsole(true, "^^ CCVP.getSubAcctExpansionKey() returning: " + Main.EXPAND_SUBS_KEY);
+		return Main.EXPAND_SUBS_KEY;
 	}
 
-	
+	@Override
+	protected void showBalanceTypePopup() {
+
+		Util.logConsole(true, "Inside: CCVP.showBalanceTypePopup() - Super'ing....");
+		super.showBalanceTypePopup();
+		if (this.getCcAccountView() != null) {
+			this.getCcAccountView().extnContext.creditCardReportDispose();
+//			this.getCcAccountView().extnContext.creditCardReportRefresh();
+		}
+	}
+
 	/**
 	 * @return the creditLimitType
 	 */

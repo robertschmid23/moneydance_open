@@ -83,7 +83,7 @@ class RatioReportGenerator extends ReportGenerator {
     report.setSubTitle(_mainModel.getSettings().getDateRange().format(_dateFormat));
 
     final FontMetrics fm = _graphics.getFontMetrics();
-    int widths[] = new int[NUM_COLUMNS];
+    int[] widths = new int[NUM_COLUMNS];
     for (int column = 0; column < NUM_COLUMNS; column++) {
       widths[column] = measureStringWidth(report.getColumnName(column), _graphics, fm);
     }
@@ -131,6 +131,7 @@ class RatioReportGenerator extends ReportGenerator {
     report.addRow(RecordRow.BLANK_ROW);
     addResultRow(report, baseCurrency, nanString, fm, widths);
 
+//    "HERE";
     final String notes = _ratio.getNotes();
     if (!StringUtils.isBlank(notes)) {
       report.addRow(RecordRow.BLANK_ROW);
@@ -208,10 +209,9 @@ class RatioReportGenerator extends ReportGenerator {
     RecordRow row = new RecordRow(labels, align, color, style, totals);
 
     // Account
-    StringBuilder sb = new StringBuilder(mdGUI.getStr(L10NRatios.REPORT_TOTAL));
-    sb.append(" - ");
-    sb.append(_mainModel.getResources().getString(typeKey));
-    labels[0] = sb.toString();
+    String sb = mdGUI.getStr(L10NRatios.REPORT_TOTAL) + " - " +
+            _mainModel.getResources().getString(typeKey);
+    labels[0] = sb;
     widths[0] = Math.max(widths[0], measureStringWidth(labels[0], _graphics, fontMetrics));
     style[0] = RecordRow.STYLE_BOLD;
     align[0] = RecordRow.ALIGN_LEFT;
@@ -244,7 +244,8 @@ class RatioReportGenerator extends ReportGenerator {
   }
 
   private void addNotes(Report report, String notes, int[] widths) {
-    // find the widest column and use that one
+    // find the widest column and use that one.
+    // ReportGenerator uses JTable, and cannot have columns that span multiple rows :-(
     int columnIndex = -1;
     int maxWidth = -1;
     for (int index = 0; index < NUM_COLUMNS; index++) {
@@ -294,11 +295,10 @@ class RatioReportGenerator extends ReportGenerator {
     totals[2] = RecordRow.TOTAL_GRANDTOTAL;
 
     // Description
-    StringBuilder sb = new StringBuilder();
-    sb.append(formatRatioPartValue(baseCurrency, _ratio.getNumeratorValue(), dec, nanString, _ratio.isNumeratorConstant()));
-    sb.append(" / ");
-    sb.append(formatRatioPartValue(baseCurrency, _ratio.getDenominatorValue(), dec, nanString, _ratio.isDenominatorConstant()));
-    labels[3] = sb.toString();
+    String sb = formatRatioPartValue(baseCurrency, _ratio.getNumeratorValue(), dec, nanString, _ratio.isNumeratorConstant()) +
+            " / " +
+            formatRatioPartValue(baseCurrency, _ratio.getDenominatorValue(), dec, nanString, _ratio.isDenominatorConstant());
+    labels[3] = sb;
     widths[3] = Math.max(widths[3], measureStringWidth(labels[3], _graphics, fontMetrics));
     style[3] = RecordRow.STYLE_BOLD;
     align[3] = RecordRow.ALIGN_LEFT;
@@ -421,10 +421,9 @@ class RatioReportGenerator extends ReportGenerator {
     RecordRow row = new RecordRow(labels, align, color, style, totals);
 
     // Account
-    StringBuilder sb = new StringBuilder(mdGUI.getStr(L10NRatios.REPORT_TOTAL));
-    sb.append(" - ");
-    sb.append(RatiosUtil.getAccountTypeNameAllCaps(mdGUI, accountType.code()));
-    labels[0] = sb.toString();
+    String sb = mdGUI.getStr(L10NRatios.REPORT_TOTAL) + " - " +
+            RatiosUtil.getAccountTypeNameAllCaps(mdGUI, accountType.code());
+    labels[0] = sb;
     style[0] = RecordRow.STYLE_PLAIN;
     align[0] = RecordRow.ALIGN_LEFT;
     totals[0] = RecordRow.TOTAL_SUBTOTAL;
@@ -472,8 +471,7 @@ class RatioReportGenerator extends ReportGenerator {
     RecordRow row = new RecordRow(labels, align, color, style, totals);
     FontMetrics fontMetrics = _graphics.getFontMetrics();
     // Account
-    if ((account.getAccountType() != Account.AccountType.INCOME) &&
-        (account.getAccountType() != Account.AccountType.EXPENSE)) {
+    if (!com.moneydance.modules.features.ratios.Util.isCategory(account)) {
       labels[0] = showFullAccountName ? account.getFullAccountName() : account.getAccountName();
       widths[0] = Math.max(widths[0], measureStringWidth(labels[0], _graphics, fontMetrics));
       style[0] = RecordRow.STYLE_PLAIN;
@@ -517,10 +515,8 @@ class RatioReportGenerator extends ReportGenerator {
                                CurrencyType baseCurrency, int[] widths) {
     Account account = txn.getAccount();
     Account category = txn.getOtherTxn(0).getAccount();
-    // Should we flip? we keep categories on the right side (column 2). We don't need to
-    // negate the value because the algorithm in RatioPart.accumulateTxn() has already
-    // done so.
-    if (RatioCompute.shouldFlipTxn(account, category, info.isSourceRequired, info.isTargetRequired)) {
+    // TODO - Should we flip? we keep categories on the right side (column 2). We don't need to negate the value because the algorithm in RatioPart.accumulateTxn() has already done so.
+    if (RatioCompute.shouldFlipTxn(account, category, info.isSourceRequired, info.isTargetRequired, info.convertedValue)) {
       Account temp = account;
       account = category;
       category = temp;

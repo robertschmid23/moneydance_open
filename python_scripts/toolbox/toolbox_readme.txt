@@ -1,6 +1,6 @@
 The Infinite Kind (Moneydance) - Co-authored by Stuart Beesley in collaboration with Moneydance as a support tool
 
-Original Author: Stuart Beesley - StuWareSoftSystems (Nov 2020 thru April 2022 - a lockdown project ~1000 coding hours)
+Original Author: Stuart Beesley - StuWareSoftSystems (2020-2024 - originally my 'lockdown' project ~2000 coding hours)
 Credit: Derek Kent(23) for his extensive testing and many hours on this project!
         Also thanks to Kevin(N), Dan T Davis, and dwg for their testing, input and OFX Bank help/input.....
 
@@ -9,7 +9,7 @@ Get more Scripts/Extensions from: https://yogi1967.github.io/MoneydancePythonScr
 Minimum Moneydance version for use as an Extension: 2021.1 (build: 3056, ideally 3069+) - (Minimum version 2020 if run as a script)
 (If you have installed the extension, but nothing happens, then check your Moneydance version)
 
-This is a Python(Jython 2.7) script that runs inside of Moneydance via the Moneybot Python Interpreter
+This is a Python(Jython 2.7) script that runs inside of Moneydance via the 'Developer Console' Python Interpreter
 As such it has full access to Moneydance's internals.
 However, where possible this script uses the published APIs. In certain circumstances, it calls internal functions.
 The script will never change anything without your permission - and it will always ask you for such (several times).
@@ -82,20 +82,23 @@ Toolbox uses the the internal MD 'code' font for display and outputs. Typically 
 Features:
 - Main window shows various diagnostic data and MD Preferences
 
-** Toolbox turns on all Moneydance's internal DEBUG messages at startup. This puts extra messages into the Console window
-   This is a useful tip - i.e. have the console window open and you will get more information when running tasks (e.g. OFX)
+** Toolbox turns on all Moneydance's internal DEBUG messages when launched if, and when, toolbox debug is enabled.
+   This writes extra debug information into Console window.
+   >> Useful tip: have the help/console window open and you will get more information when running some tasks (e.g. OFX)
 
-NOTE: Where CMD is specified, this may be CTRL (or ALT) in Windows / Linux
+NOTE: Where CMD is specified, this will be CTRL in Windows / Linux (or ALT if that does not work)...
 
 CMD-I           This  Help Instruction Information
 CMD-F           Search for text in display windows
 CMD-O           Copy all outputs to Clipboard
-CMD-SHIFT-U     Examine an object's raw data - enter the Object's UUID
+CMD-G           Requests the JVM to run Garbage Collection....
+CMD-SHIFT-U     Examine an object's raw data - enter the Object's UUID to find in the dataset
 CMD-SHIFT-+     Unlock Toolbox (Contact Author for password and usage) - (Might be CMD-SHIFT-= on some keyboards)
 
-Toolbox also installs two new Extensions Menu options (which allow the user to select register transactions before running):
+Toolbox also installs three new Extensions Menu options (first two: select register transactions before running):
     - Toolbox: Move Investment Transactions
     - Toolbox: Total Selected Transactions
+    - Toolbox: Zap md+ (default) memo fields
 
 TOOLBAR / MENU BAR Contains the following:
     - Toolbox Options menu
@@ -121,7 +124,6 @@ Read-Only Mode (Default at launch) - Use ALT-M to toggle between Read-Only and U
         - View MD Console (the whole file - searchable)
         - View MD Config.dict file (the whole file - searchable)
         - View MD Custom Theme file  (only appears if it exists)
-        - View your Java .vmoptions file (only appears if it exists) - INCLUDES VARIOUS INSTRUCTIONS TOO
         - View Extension(s) details
         - View memorised reports (parameters and default settings)
         - Find my Sync Encryption password(s) in iOS Backup(s) - DECOMMISSIONED >> NO LONGER AVAILABLE
@@ -138,12 +140,15 @@ Read-Only Mode (Default at launch) - Use ALT-M to toggle between Read-Only and U
         - View your accounts' calculated reconcile window auto 'as of' date (active accounts only)
 
     - MENU: Currency & Security tools:
-        - DIAG - Diagnose currencies / securities (including relative currencies) If errors, then go to FIX below
+        - DIAG - Diagnose base currency. Run this first. If errors, then go to FIX below
+        - DIAG - Diagnose currencies / securities (including relative currencies). If errors, then go to FIX below
         - DIAG - Can I delete a Security (tells you whether a security/stock is being used - and where)
         - DIAG - Can I delete a Currency (tells you whether a currency is being used - and where)
         - DIAG - List decimal places (currency & security). Shows you the hidden setting and related data.
         - DIAG - Show your open LOTs on stocks/shares (when using LOT control) (show_open_tax_lots.py)
         - DIAG - Show Securities with 'invalid' LOT Matching (cause of LOT matching popup window)
+        - DIAG - Produce a quick validation report on Currency rates / Security prices / dates
+        - DIAG - Produce a quick report on all Currency rates / Security prices / dates
         - DIAG - Diagnose currency / security's current price hidden 'price_date' field. If warnings, then go to FIX below
 
     - MENU: Accounts & Categories tools
@@ -190,14 +195,16 @@ ALT-M - Update Mode (** NOTE: Some menu items will disable if currency / securit
                 3. RESET>> Just Register Transaction Initial Views (e.g. In investments, start on Portfolio or Security View
                 4. RESET>> Window locations, Size, Sort Orders, One-line, Split Reg, Offset, Column Widths; Dividers, isOpen,
                 isExpanded, isMaximised settings (this does not reset Filters or Initial views)
+        - FIX - Disable/(re)enable the bundled MoneyForesight extension (requires MD restart)
+        - FIX - Close this Dataset (and related windows) (only with Developer unlock)
         - FIX - Rename this dataset Rename this dataset (within the same location)
         - FIX - Relocate this dataset back to the default 'internal' location
         - FIX - Relocate this dataset to another location [Note: IK do not recommend this]
         - FIX - Cleanup MD's File/Open list of 'external' files (does not touch actual files)
-        - DELETE Files from Menu>File>Open list and also from DISK (Removes files from 'Internal' and 'External' locations).
+        - DELETE Files from Menu>File>Open list [and OPTIONALLY also from DISK] (can remove files from 'Internal' and 'External' locations).
             >> External locations > Edits config.dict to remove references to external files for File/open - AND ALLOWS YOU TO DELETE THE FILES TOO
             >> Default / Internal locations > ALLOWS YOU TO DELETE THE Dataset from disk (this then removes it from the File/Open menu)
-        - FIX - Remove inactive accounts/categories from SideBar
+        - FIX - Remove inactive accounts/categories from SideBar (MD versions < MD2024)
         - FIX - Set/Change Default Moneydance FONTS                                                                     >> 2021.1 onwards
         - FIX - Delete Custom Theme file
         - FIX - Delete Orphaned/Outdated Extensions (from config.dict and .mxt files)
@@ -207,12 +214,13 @@ ALT-M - Update Mode (** NOTE: Some menu items will disable if currency / securit
         - Reset/Fix/Edit/Add CUSIP Banking Link. This is the link for downloaded securities.... (remove_ofx_security_bindings.py and change-security-cusip.py)
         - Update OFX Last Txn Update Date (Downloaded) field for an account (MD versions >= 2022 can now use Online menu, Setup Online Banking, Reset Sync Date)
         - Reset ALL OFX Last Txn Update Dates (default, OFX and MD+) (MD 2022.3(4074) onwards)
+        - Remove/disable (hidden) MD+/OFX(/QIF) data from downloaded Transactions within an Account (useful to address as_of reconcile date issues)
         - Delete OFX Banking Logon Profile / Service (these are logon profiles that allow you to connect to your bank) (remove_one_service.py)
         - Cleanup missing Online Banking Links (NOTE: This is always called when running 'Delete OFX Banking Logon Profile / Service' above
         - OFX Authentication Management (various functions to manage authentication, UserIDs, ClientUIDs)
             - SUBMENU: OFX Authentication Management
                 - Clear the Authentication Cache (Passwords) for One Service / Bank Profile
-                - ClOFX_view_reconcile_AsOf_Datesear ALL Authentication Cache (Passwords)
+                - Clear ALL Authentication Cache (Passwords)
                 - Edit/Setup (multiple) UserIDs / Passwords (executes a special script) (ofx_populate_multiple_userids.py)
                 - Edit stored authentication passwords linked to a working OFX Profile
                 - Manual Edit of stored Root UserIDs/ClientUIDs
@@ -225,9 +233,9 @@ ALT-M - Update Mode (** NOTE: Some menu items will disable if currency / securit
         - Import ('transplant') your Moneydance+ (Plaid) license (keys) from a file (exported by Toolbox) - MD Version 2022 onwards. USE WITH CARE.
         - ZAP Dataset's Moneydance+ (Plaid) settings - MD Version 2022 onwards. USE WITH CARE. WILL REQUIRE RE-REGISTRATION!
         - USAA ONLY: Manually 'prime' / overwrite stored Root UserIDs/ClientUIDs
-        - USAA Only: Executes the special script to create a working USAA OFX Profile (ofx_create_new_usaa_bank_custom_profile.py)
 
     - MENU: Currency & Security tools:
+        - FIX - Fix the base currency. Apply this fix before diagnosing/fixing currencies (below).
         - FIX - Fix currencies / securities (including relative currencies) (fixes your currency & security's key settings) (reset_relative_currencies.py)
         - FIX - Edit a Security's (hidden) Decimal Place setting (adjusts related Investment txns & Security balances accordingly).  >> 2021.2 onwards
         - FIX - Merge 'duplicate' securities (and related Investment txns) into one master security record (by TickerSymbol).        >> 2021.2 onwards
@@ -268,11 +276,12 @@ ALT-M - Update Mode (** NOTE: Some menu items will disable if currency / securit
 
     - MENU: Advanced options
         >> SPECIAL ADVANCED FEATURES - USE WITH CARE!
-        - Toggle Moneydance DEBUG (turns ON all MD internal Debug messages - same as view console)
-        - Toggle other Moneydance DEBUGs
-        - Extract a (single) file from within LocalStorage. Decrypts a LocalStorage file to TMP dir for viewing (file self destructs after MD restart)
+        - Toggle other Moneydance DEBUGs (manually enable/disable debug mode on individual other known debug settings)
+        - View your Java .vmoptions file (only appears if it exists) - INCLUDES VARIOUS INSTRUCTIONS TOO (READONLY)
+        - Show advanced MD launch options/parameters. Displays advanced techniques / settings / parameters for launching Moneydance (READONLY)
+        - Extract/decrypt a (single) file from within Dataset. Decrypts a Dataset file to Dataset/tmp/decrypted dir for viewing (tmp file self destructs after MD restart)
+        - Extract/decrypt a (single) file from Sync folder. Decrypts a Sync file to Dataset/tmp/decrypted/fromSync dir for viewing (tmp file self destructs after MD restart)
         - Decrypt entire dataset. Decrypts entire dataset to a folder of your choosing...
-        - Peek at an encrypted file located in your Sync Folder.... Decrypts a Sync (e.g. Dropbox) file and shows it to you...
         - Shrink Dataset. This function deletes MD's log files of all prior changes (not needed).. Typically these are .txn, .mdtxn files...
         - Clone Dataset's structure (purge transactional data) - Copy dataset keeping structures, purging all transactional data.
         - Call Save Trunk File option.... Immediately flushes all in memory changes to disk, including your dataset (rather than wait for restart)
@@ -282,17 +291,24 @@ ALT-M - Update Mode (** NOTE: Some menu items will disable if currency / securit
         - Force reset Sync settings (This resets all Sync settings, changes your Sync ID, and turns Sync off. You can then re-enable it for a fresh Sync)
         - Toggle Sync Downloading of Attachments (Normally this defaults to ON; Change to OFF to prevent attachments downloading via Sync)
         - Repair migrated Dropbox location 'alias' (MacOS only) (Attempts to (re)create the missing file system alias that points to new location)
-        - Import (a single) File back into LocalStorage. Encrypts a file of your choosing and puts it into LocalStorage/safe/TMP...
+        - Import/encrypt a (single) file back into Dataset. Encrypts a file of your choosing and puts it into Dataset/safe/tmp/encrypted ...
+        - Import/encrypt a (single) file back into Sync folder. Encrypts a file of your choosing and puts it into Sync/tmp/encrypted ...
         - Allows User to Add/Change/Delete Settings/Prefs >> key/value in config.dict or LocalStorage() (./safe/settings)
         - Allows User to Add/Change/Delete an Object's Parameter keys (this can change data in your dataset/database directly)
         - Suppress the "Your file seems to be in a shared folder (Dropbox)" warning... (optional when condition exists)
+        - Show your encryption keys, and the Moneydance encryption methodology (use with care)
 
 CMD-P - View Toolbox's parameters file (StuWareSoftSystems). Also allows user to Delete all, and/or change/delete single saved parameters
 
 CMD-/ - View quick JVM diagnostics
 
-Menu - DEBUG MODE
-    >> Turns on Toolbox's own internal debug messages...
+Menu - Toolbox Debug mode
+    >> Enables toolbox debug mode - writes extra debug information to help/console (also turns on Moneydance's debug(s).
+    NOTE: When you enable / disable toolbox debug, then it will also flip all Moneydance internal debug(s) on/off too...
+
+Menu - Toggle Moneydance Debug(s)
+    >> Manually toggles Moneydance's internal debug mode(s) - writes extra debug information to help/console
+    NOTE: This setting is not saved by toolbox...
 
 Menu - Auto Prune of Internal Backup files
     >> Toolbox makes extra backups of config.dict, ./safe/settings and custom_theme.properties. This setting auto-prunes
@@ -300,5 +316,13 @@ Menu - Auto Prune of Internal Backup files
 
 Menu - Disable Backup & Disclaimer warnings
     >> DISABLES all Toolbox's warnings about performing backups and disclaimer warnings - DISABLE AT YOUR OWN RISK!!!!!!
+
+Menu - Page Setup
+    >> Setup your printer
+
+Menu - Enable Observer
+    >> Enables special observer mode to capture (weak) references to key objects as they are created.
+       E.g. AccountBookWrapper, AccountBook, Syncer, Syncer's Threads....
+       Use CMD-/ to view details (special usage only). Normal users should not use / leave enabled
 
 Thanks for reading.....

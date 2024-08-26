@@ -4,17 +4,25 @@
       "type" = "menu"
       "script_file" = "toolbox_bootstrap.py"
       "name" = "Toolbox"
-      "module_name" = "Toolbox"
+      "name.en-GB" = "Toolbox"
     }
     {
       "type" = "menu"
       "script_file" = "toolbox_move_merge_investment_txns.py"
       "name" = "Toolbox: Move investment transactions"
+      "name.en-GB" = "Toolbox: Move investment transactions"
     }
     {
       "type" = "menu"
       "script_file" = "toolbox_total_selected_transactions.py"
       "name" = "Toolbox: Total selected transactions"
+      "name.en-GB" = "Toolbox: Total selected transactions"
+    }
+    {
+      "type" = "menu"
+      "script_file" = "toolbox_zap_mdplus_ofx_qif_default_memo_fields.py"
+      "name" = "Toolbox: Zap md+/ofx/qif (default) memo fields"
+      "name.en-GB" = "Toolbox: Zap md+/ofx/qif (default) memo fields"
     }
     {
       "type" = "initializer"
@@ -23,12 +31,24 @@
     {
       "type" = "method"
       "method" = "invoke"
-      "script_file" = "toolbox_invoke.py"
+      "script_file" = "toolbox_invoke_handle_event.py"
     }    
+    {
+      "type" = "method"
+      "method" = "handle_event"
+      "script_file" = "toolbox_invoke_handle_event.py"
+    }
     {
       "type" = "method"
       "method" = "unload"
       "script_file" = "toolbox_unload.py"
+    }
+    {
+      "type" = "txn_menu"
+      "name" = "Toolbox: Total selected transactions"
+      "name" = "Toolbox: Total selected transactions"
+      "script_file" = "toolbox_total_selected_transactions.py"
+      "script_fixed_parameter" = "total_selected_transactions"
     }
   )
 }
