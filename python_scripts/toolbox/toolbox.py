@@ -7,7 +7,7 @@
 # Moneydance Support Tool
 # ######################################################################################################################
 
-# toolbox.py build: 1066 - November 2020 thru 2024 onwards - Stuart Beesley StuWareSoftSystems (>1000 coding hours)
+# toolbox.py build: 1069 - 2020 thru 2025 onwards - Stuart Beesley StuWareSoftSystems (>1000 coding hours)
 # Thanks and credit to Derek Kent(23) for his extensive testing and suggestions....
 # Further thanks to Kevin(N), Dan T Davis, and dwg for their testing, input and OFX Bank help/input.....
 # Credit of course to Moneydance(Sean) and IK retain all copyright over Moneydance internal code
@@ -56,7 +56,7 @@
 ###############################################################################
 # MIT License
 #
-# Copyright (c) 2021-2024 Stuart Beesley - StuWareSoftSystems & Infinite Kind (Moneydance)
+# Copyright (c) 2021-2025 Stuart Beesley - StuWareSoftSystems & Infinite Kind (Moneydance)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -80,91 +80,6 @@
 # NOTE: java.lang.IllegalArgumentException can occur when doing something like '"%s" %(java.util.HashMap)' containing unicode (or calling print on the same HashMap)
 #       Should be fixed in Jython 2.7.3 sometime)... Also note that unicode() should be used instead of str() where appropriate....
 
-# build: 1056 - Tweaked toolbox_init.py with error message; tweaked OFX_view_reconcile_AsOf_Dates()
-# build: 1056 - New feature: 'DIAG: Produce report of Accounts and bank/account number information'
-# build: 1056 - Added startup check for accounts that have both OFX AND md+ connections configured...
-# build: 1056 - DECOMMISSIONED find_IOS_sync_data() as py file too large...
-# build: 1056 - Added SwingTimer Blinking JMenuItem for Toolbox Options....; Changed menus to popup alerts when update/advanced modes not enabled...
-# build: 1056 - Eliminated Advanced Mode... Now all updates within Update Mode..
-# build: 1056 - Tweaks for .getAbsolutePath() vs .getCanonicalPath() and Dropbox updated Dropbox location on MacOS
-# build: 1056 - Accepted Pull Request from xx whereby Edit Security Decimals Places was changed to allow 16dpc. NOTE: 922.3372036854775807 is the max shares number MD can hold at 16dpc
-# build: 1056 - Added 'FIX: Add alternative account numbers for 'Accounts and bank/account number' report (above)' feature
-# build: 1056 - Added 'lBypassAllBackupsAndDisclaimers_TB' feature....
-# build: 1056 - Added launch check for base CurrencyType relative rate != 1.0; fixed diagnose/repair currency option to fix != 1.0 (properly)
-# build: 1057 - Changed errortrap in force disconnect md+ connection....
-# build: 1057 - Bold'ified [sic] blinking cells...; tweaked security account information output (curious view selected object)
-# build: 1057 - Added MacOSx Finder path for internal root folder (fake alias)....; launch check for non-hierarchical security txn(s)
-# build: 1057 - Added bootstrap to execute compiled version of extension (faster to load)....
-# build: 1057 - Added launch detection for potential duplicate securities....
-# build: 1058 - Support for MD2023.0(5000) Kotlin compiled version(s)....; Wrapped responses that now return okio.BufferedSource instead of java.io.InputStream
-#               Kotlin affected LocalStorage and getSyncFolder methods: extract_attachments, Shrink Dataset, Load (old) Pickle file, advanced_options_decrypt_file_from_sync...
-#               More Kotlin fixes.... loadMDPreferences() to .readSet() call when using StringBuilder()...
-#               More Kotlin fixes.... Import MD+ Licence call to .getDecryptStream() needs BufferredSource.
-#               Clone Dataset - fix for new balance adjustment methods...; also outputs that show Start Balance...
-#               Fixed call to .updateFonts() with True parameter from MD2022.3(4077) onwards
-#               updated bundled toolbox_move_merge_investment_txns.py script to handle/block when balance adjustment detected...
-#               Updated reset window data methods to account for new/enhanced filter keys ("custom_filter_int" and "last_custom_filter_int")
-#               MD2023 fixes to common code...
-#               Quick check for earlier MD2023 Sync issue repair flagged......
-# build: 1059 - MD2023.2(5007); Launch check for invalid 'processed.dct' file (I have seen this as a folder!?)....
-#               Change isSwingComponentInvalid() not to check for .isValid()...
-#               Fixed Windows, (hot) keystrokes to use CTRL when attached to Menus so they are consistent (also with MD)...
-#               Tweak to IAGREE message - wrap to next line...
-#               Fix CMD-M (CTRL-M) that didn't work on Windows.... (keystroke 'm' not passed to .getActionCommand())
-#               Tweak startup check messages detect_non_hier_sec_acct_or_orphan_txns()....
-#               Common code tweaks...
-#               Added 'toolbox_zap_mdplus_default_memo_fields' menu option
-#               Enhanced: detect_non_hier_sec_acct_or_orphan_txns() and fix_non_hier_sec_acct_txns() for when investment txn is sitting in a non investment account
-#                         Usually caused by batch change category feature view viewing a xfr split in a non investment register (should be blocked really).
-#               Fix to missing class reference in 'buddy' toolbox_move_merge_investment_txns.py script....
-#               Added "Remove (hidden) downloaded OFX/MD+ data from Transactions within an Account" feature
-#               Renamed script to toolbox_zap_mdplus_ofx_default_memo_fields.py. Now fixes OFX too...
-# build: 1060 - Enhanced buddy 'toolbox_zap_mdplus_ofx_default_memo_fields' script
-#               Renamed script to 'toolbox_zap_mdplus_ofx_qif_default_memo_fields' script
-#               Tweaked OFX_removeDownloadedDataFromTxns() to include QIF in the settings zap routines....
-#               Disabled the createUSAAProfile() menu option (no longer needed)
-#               MD2023.2(5008): Kotlin entire code set recompiled build >> tweaks/fixes...
-#               ... Tweaked ManuallyCloseAndReloadDataset() to cope with multi syncer threads...
-#               added call to .showURL("moneydance:fmodule:extract_data:disable_events") and enable_events when restarting dataset....
-#               Deprecated DetectAndChangeMacTabbingMode class to avoid PyBytecode-approach: java.lang.RuntimeException: java.lang.RuntimeException: For unknown reason, too large method code couldn't be resolved
-#               Added new DetectMobileAppTxnFiles class...; Added new advanced_options_encrypt_file_into_sync_folder() feature
-#               Deprecated: advanced_options_set_check_days()
-#               NOTE: MD2023.2(5008+) KOTLIN ALL uses Java 20.0.1 on Mac. Thread.stop() no longer work affects ManuallyCloseAndReloadDataset's ability to kill Syncer Threads.. :-(
-#               Tweak to detect_fix_txns_assigned_root (removed detect_non_hier_sec_acct_or_orphan_txns() check).
-#               Tweaks to class ManuallyCloseAndReloadDataset() to better handle (new) syncer threads when dataset closing
-#               Enhanced _init, _handle_event, _invoke (etc).py scripts; Now maintain list of WeakReferences() to all observed wrapper, book, syncer, thread objects
-#               MD2023.2(5019) started using WeakReference()s to 'book' (as 'book' and 'bookRef')...
-#               New menu for Observer Mode. Enable/Disable the capture of WeakReferences. Normally disabled.
-#               MD2023.2(5020) fixes - .getInternalAccountBooks() / getExternalAccountBooks() now returns [books]...
-#               Tweak MyJFrame.dispose() with .getContentsPane().removeAll()
-#               Change when Moneydance's DEBUGs are turned on (when debug on, or from new options menu toggle):
-#               Enhanced: advanced_options_DEBUG() and advanced_options_other_DEBUG()
-#               Tweaked isSyncing() detection capability
-#               Build 5031 removed the MD+ licenseCache field - tweak to deal with the change...
-#               Added feature to disable MoneyForesight whenever MD is launched (prevents memory leaks etc)
-#               Cleaned up references holding onto MD Objects....
-#               Added advanced_show_encryption_keys() feature
-#               Build: 5036 - changed MoneyForesight fields - fixed disable MFS feature...
-# build: 1061 - Added closeBotInterface() and set moneyBotInterface to None when closing dataset....; Added 'moneyBotInterface' to .gatherJVMDiagnostics()
-#               More memory leak cleanups....; Added: CMD-G - Requests the JVM to run Garbage Collection....
-#               Enhanced can_I_delete_security() to show transaction count..
-#               Enhanced error traps in find_other_datasets()... Tweaked get_sync_folder() with option to return sync base folder too...
-#               ... added getDropboxSyncFolderForBasePath() for find_other_datasets()...
-#               Added checks for macOS Sonoma(14).... iCloud issues!
-#               Build 5046 fixes "Infinity" backups and defines .getNumBackupsToKeep() etc (no actual toolbox fix required)
-#               JFrame.dispose() added rootPane.getInputMap().clear() - ensure no memory leaks...; Increased usage of DateRange()
-# build: 1062 - Common code - FileFilter fix...; Tweak OFX_view_CUSIP_settings() to deal with blank CUSIP schemes...
-#               add .getFullAccountName() to the error message in review_security_accounts()
-#               updated -Xmx to include -XX:MaxRAMPercentage= and tweak show vmoptions feature etc....
-#               Added new option showMDLaunchParameters()...; relocated advanced_clone_dataset() into extra_code...
-# build: 1063 - Common code - FileFilter fix...; Tweak OFX_view_CUSIP_settings() to deal with blank CUSIP schemes...
-#               tweaked: force_change_all_accounts_categories_currencies(); added: validateAndFixBaseCurrency. Tweaked base currency validation/repair code.
-#               Tweaked diag/fix currencies/securities and diag/fix base currency routines; tweak menu for fix base currency
-# build: 1064 - Tweak buildDiagText() - 'OS Platform:' add space before version text....
-#               Take advantage of of context menu scriptinfo abilities (since MD2024(5100))... - e.g. set selected transactions...
-#               Switch to new debug controls in AppDebug class...
-#               From MD2024(5100) onwards, disable remove_inactive_from_sidebar(); rename 'MoneyBot' references to 'Developer Console'
-#               Add checks for "add_to_sidebar.loc" and "add_to_sidebar.size" window size/location keys (5104)....
 # build: 1065 - Added MD2024(5108) new auto backup save everytime time recognition (etc)... New key, also leverage new UserPreferences.getBackupOption() and class: BackupOption
 # build: 1066 - Tweak debug on/off code adjusting for the CostCalculation debugger switch after 5118
 #               Tweak MyJFrame to catch individual errors....
@@ -173,9 +88,25 @@
 #               Update licensing keys for MD2023/24 etc...
 #               Added Moneyforesight disabled status to main toolbox diagnostics screen....
 # build: 1066 - MD2024.2(5142) - moneydance_extension_loader was nuked and moneydance_this_fm with getResourceAsStream() was provided.
-# build: 1066 - ???
 # build: 1066 - Tweaked wherever graphs/reports (default/memorized) are retrieved for to detect 'unknown' report generators et al...
-# build: 1066 - ???
+# build: 1067 - NOTE: MD2024.2(5152) brings new Syncer.getCurrentSyncStats() etc...
+# build: 1067 - NOTE: MD2024.2(5153) brings new ConsoleWindow(...) utilities for promote/demote primary/secondary, along with push/pull sync data to/from remote
+# build: 1067 - NOTE: MD2024.2(5153-5154) changes getUI() - now does not try to launch the GUI if not loaded.. Just returns null...
+# build: 1067 - Tweak clone dataset as the manual methods of loading a dataset/model changed!
+# build: 1067 - Add Account Menu options to validate / fix account start dates (based on earliest txn dates)...
+# build: 1067 - Fixes as the shouldBeIncludedInNetWorth() was renamed in MD2024.3(5204) to get/setIncludeInNetWorth()
+# build: 1067 - BUGFIX read_preferences_file() .readFromFile() was calling str(file)... switched to pass the File reference.
+# build: 1067 - Added menu options for Reset inbuilt report/graph parameters (to defaults), and Delete all memorized reports/graphs...
+# build: 1067 - BUGFIX issue referencing PlaidConnection - use isMDPlusGetPlaidClientEnabledBuild() instead.
+# build: 1068 - Tweak validate account start dates to look for future dates. Adding 2025 license keys...
+# build: 1068 - diag screen tweaks for 5252 -nobackup and no splash screen options. Also 5252 Account::ancestors
+# build: 1068 - Add feature so that users can quickly remove inactive accounts from Net Worth
+# build: 1069 - ???
+# build: 1069 - switch to call NetworthCalculator off the EDT...; add warning to DisplayUUID when uuid not found.
+# build: 1069 - Tweaks to fix_non_hier_sec_acct_txns()
+# build: 1069 - MoneydanceGUI Kotlin'ized.. plusPoller renamed to plusController
+# build: 1069 - added diag_security_splits_no_price() feature; patch thin_price_history() to exclude just before/after on split dates
+# build: 1069 - ???
 
 # NOTE: 'The domain/default pair of (kCFPreferencesAnyApplication, AppleInterfaceStyle) does not exist' means that Dark mode is NOT in force
 
@@ -193,6 +124,11 @@
 # todo - consider removing toolbox.py source code now that it's compiled and we launch a .class file...
 # todo - advanced_clone_dataset() - consider whether to provide options to zap md+ settings, reset password etc...
 
+
+#todo - @sth - OFX Banking info, redact personal information. it does that for the account numbers in the heading of each section.
+#todo - ...... however there is another line with results of the GetInfo call (including the account number). This line shows up in the log with the ‘?’ replaced with the actual account number.
+#todo -  >> getInfo {u’account_num’: u????? …..}
+
 # NOTE: Toolbox will connect to the internet to gather some data. IT WILL NOT SEND ANY OF YOUR DATA OUT FROM YOUR SYSTEM....:
 # 1. At launch it connects to the Author's code site to get information about the latest version of Toolbox and version requirements
 # 2. At various times it may connect to the Infinite Kind server to gather information about extensions and versions
@@ -208,7 +144,7 @@
 
 # SET THESE LINES
 myModuleID = u"toolbox"
-version_build = "1066"
+version_build = "1069"
 MIN_BUILD_REQD = 1915                   # Min build for Toolbox 2020.0(1915)
 _I_CAN_RUN_AS_DEVELOPER_CONSOLE_SCRIPT = True
 
@@ -557,7 +493,7 @@ else:
     from java.awt import Component                                                                                          # noqa
     from java.awt import GraphicsEnvironment, Rectangle, GraphicsDevice, Desktop, Event, GridBagConstraints, Window, Frame  # noqa
     from java.awt.event import ComponentAdapter, ItemListener, ItemEvent, HierarchyListener, ActionListener, MouseAdapter   # noqa
-    from java.util import UUID, Timer, TimerTask, Map, HashMap, Vector
+    from java.util import UUID, Timer, TimerTask, Map, HashMap, Vector, Collections                                         # noqa
     from java.util.stream import Collectors
     from java.util.zip import ZipInputStream, ZipEntry
     from java.nio.charset import StandardCharsets
@@ -614,8 +550,8 @@ else:
     GlobalVars.__TOOLBOX = None
 
     GlobalVars.TOOLBOX_MINIMUM_TESTED_MD_VERSION = 2020.0
-    GlobalVars.TOOLBOX_MAXIMUM_TESTED_MD_VERSION = 2024.2
-    GlobalVars.TOOLBOX_MAXIMUM_TESTED_MD_BUILD =   5146
+    GlobalVars.TOOLBOX_MAXIMUM_TESTED_MD_VERSION = 2025.0
+    GlobalVars.TOOLBOX_MAXIMUM_TESTED_MD_BUILD =   5500
     GlobalVars.MD_OFX_BANK_SETTINGS_DIR = "https://infinitekind.com/app/md/fis/"
     GlobalVars.MD_OFX_DEFAULT_SETTINGS_FILE = "https://infinitekind.com/app/md/fi2004.dict"
     GlobalVars.MD_OFX_DEBUG_SETTINGS_FILE = "https://infinitekind.com/app/md.debug/fi2004.dict"
@@ -632,6 +568,7 @@ else:
     GlobalVars.MD_KOTLIN_COMPILED_BUILD_ALL = 5008                          # 2023.2 (Entire codebase compiled in Kotlin)
     GlobalVars.MD_INFINITYBACKUPS_FIXED = 5046                              # 2023.2
     GlobalVars.MD_VMOPTIONS_CHANGED = 5057                                  # 2023.2 (switched to -include files)
+    GlobalVars.MD_PRICEDISPLAYDECIMALS_BUILD = 5147                         # 2024.2
 
     GlobalVars.fixRCurrencyCheck = 0
     GlobalVars.globalSaveFI_data = None
@@ -2964,7 +2901,7 @@ Visit: %s (Author's site)
             _label1.setForeground(getColorBlue())
             aboutPanel.add(_label1)
 
-            _label2 = JLabel(pad("StuWareSoftSystems (2020-2024)", 800))
+            _label2 = JLabel(pad("StuWareSoftSystems (2020-2025)", 800))
             _label2.setForeground(getColorBlue())
             aboutPanel.add(_label2)
 
@@ -3378,8 +3315,29 @@ Visit: %s (Author's site)
     # GlobalVars.MD_REPGEN_UPGRADED_BUILD = 9999                                                                          # Changes did not make it into live code :-<
     # def isRepGenUpgradedBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_REPGEN_UPGRADED_BUILD)
 
+    GlobalVars.MD_GUI_KOTLIN_BUILD = 5500                                                                               # MD2025.0(5500)
+    def isGUIKotlinBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_GUI_KOTLIN_BUILD)
+
     GlobalVars.MD_MEMREPORTS_UPGRADED_BUILD = 5142                                                                      # MD2024.2(5142)
     def isMemReportsUpgradedBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_MEMREPORTS_UPGRADED_BUILD)
+
+    GlobalVars.MD_NETWORTH_UPGRADED_BUILD = 5204                                                                        # MD2024.3(5204)
+    def isNetWorthUpgradedBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_NETWORTH_UPGRADED_BUILD)
+    if isNetWorthUpgradedBuild():
+        GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW = Account.PARAM_INCLUDE_IN_NET_WORTH
+
+    GlobalVars.MD_NETWORTH_ASOF_UPGRADED_BUILD = 5500                                                                   # MD2025(5500)
+    def isNetWorthAsOfUpgradedBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_NETWORTH_ASOF_UPGRADED_BUILD)
+    if isNetWorthAsOfUpgradedBuild(): pass
+
+    GlobalVars.MD_ANCESTORS_UPGRADED_BUILD = 5252                                                                       # MD2024.3(5252)
+    def isAncestorsUpgradedBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_ANCESTORS_UPGRADED_BUILD)
+
+    GlobalVars.MD_NOSPLASHSCREEN_OPTION_BUILD = 5253                                                                    # MD2024.4(5253)
+    def isNoSplashScreenOptionsBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_NOSPLASHSCREEN_OPTION_BUILD)
+
+    GlobalVars.MD_SUPPRESS_BACKUPS_OPTION_BUILD = 5047                                                                  # 2023.2(5047)
+    def isSuppressBackupsOptionBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_SUPPRESS_BACKUPS_OPTION_BUILD)
 
     GlobalVars.MD_COSTCALCULATION_UPGRADED_BUILD = 5100                                                                 # MD2024(5100)
     def isCostCalculationUpgradedBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_COSTCALCULATION_UPGRADED_BUILD)
@@ -3395,6 +3353,11 @@ Visit: %s (Author's site)
     def isAppDebugEnabledBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_APPDEBUG_ENABLED_BUILD)
     if isAppDebugEnabledBuild():
         from com.infinitekind.util import AppDebug                                                                      # noqa
+
+    GlobalVars.MD_APPTIMER_UPGRADED_BUILD = 5121                                                                        # MD2024.1(5121)
+    def isAppTimerUpgradedBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_APPTIMER_UPGRADED_BUILD)
+    if isAppTimerUpgradedBuild():
+        from com.infinitekind.util import AppTimer                                                                      # noqa
 
     GlobalVars.MD_ENHANCED_SIDEBAR_BUILD = 5100                                                                         # MD2024(5100)
     def isEnhancedSidebarBuild(): return (MD_REF.getBuild() >= GlobalVars.MD_ENHANCED_SIDEBAR_BUILD)
@@ -3465,8 +3428,14 @@ Visit: %s (Author's site)
         global advanced_options_decrypt_file_from_dataset, advanced_options_decrypt_file_from_sync
         global advanced_options_decrypt_dataset, advanced_show_encryption_keys
         global CollectTheGarbage, getDropboxSyncFolderForBasePath, advanced_options_force_reset_sync_settings
+        global reset_all_inbuilt_report_params_defaults, delete_all_memorized_reports
         global advanced_clone_dataset
         global advanced_options_DEBUG, advanced_options_other_DEBUG
+        global validate_account_start_dates, fix_account_start_dates
+        global view_shouldBeIncludedInNetWorth_settings, edit_shouldBeIncludedInNetWorth_settings, view_networthCalculations
+        global diag_security_splits_no_price
+        global view_inactiveAcctsIncludedNW, fix_inactiveAcctsIncludedNW
+        global advanced_options_edit_parameter_keys
 
         _extraCodeString = myModuleID + "_extra_code" + ".py"
         if MD_EXTENSION_LOADER is not None:
@@ -3544,7 +3513,7 @@ Visit: %s (Author's site)
             plusPoller = MD_REF.getUI().getPlusController()
             if plusPoller is not None:
                 invokeMethodByReflection(plusPoller, "shutdown", None)
-                setFieldByReflection(MD_REF.getUI(), "plusPoller", None)
+                setFieldByReflection(MD_REF.getUI(), "plusController" if isGUIKotlinBuild() else "plusPoller", None)
 
             try:
                 myPrint("DB", "... Clearing out the in-memory license cache...")
@@ -4337,6 +4306,8 @@ Visit: %s (Author's site)
     def isMDPlusGetPlaidClientEnabledBuild(): return (float(MD_REF.getBuild()) >= GlobalVars.MD_MDPLUS_GETPLAIDCLIENT_BUILD)                        # 2022.5
 
     def isRRateCurrencyIssueFixedBuild(): return (float(MD_REF.getBuild()) >= GlobalVars.MD_RRATE_ISSUE_FIXED_BUILD)                                # 2021.2
+
+    def isPriceDisplayDecimalsBuild(): return (float(MD_REF.getBuild()) >= GlobalVars.MD_PRICEDISPLAYDECIMALS_BUILD)    # noqa                                  # 2023.0(5000)
 
     def isKotlinCompiledBuildAll(): return (float(MD_REF.getBuild()) >= GlobalVars.MD_KOTLIN_COMPILED_BUILD_ALL)                                    # 2023.0(5000)
 
@@ -5815,7 +5786,8 @@ Visit: %s (Author's site)
         textArray.append(u"Moneydance updater version to track: %s" %MD_REF.getPreferences().getSetting(u"updater.version_to_track",u""))
         textArray.append(u"")
 
-        currLicense = MD_REF.getPreferences().getSetting(u"gen.lic_key2024",
+        currLicense = MD_REF.getPreferences().getSetting(u"gen.lic_key2025",
+                                                                MD_REF.getPreferences().getSetting(u"gen.lic_key2024",
                                                                 MD_REF.getPreferences().getSetting(u"gen.lic_key2023",
                                                                 MD_REF.getPreferences().getSetting(u"gen.lic_key2022",
                                                                 MD_REF.getPreferences().getSetting(u"gen.lic_key2021",
@@ -5829,15 +5801,14 @@ Visit: %s (Author's site)
                                                                 MD_REF.getPreferences().getSetting(u"gen.lic_key2010",
                                                                 MD_REF.getPreferences().getSetting(u"gen.lic_key2008",
                                                                 MD_REF.getPreferences().getSetting(u"gen.lic_key2004",
-                                                                MD_REF.getPreferences().getSetting(u"gen.lic_key", u"????")))))))))))))))
+                                                                MD_REF.getPreferences().getSetting(u"gen.lic_key", u"????"))))))))))))))))
 
-        # license2024 = MD_REF.getPreferences().getSetting(u"gen.lic_key2024", None)
+        # license2025 = MD_REF.getPreferences().getSetting(u"gen.lic_key2025", None)
+        license2024 = MD_REF.getPreferences().getSetting(u"gen.lic_key2024", None)
         license2023 = MD_REF.getPreferences().getSetting(u"gen.lic_key2023", None)
         license2022 = MD_REF.getPreferences().getSetting(u"gen.lic_key2022", None)
         license2021 = MD_REF.getPreferences().getSetting(u"gen.lic_key2021", None)
-        license2020 = MD_REF.getPreferences().getSetting(u"gen.lic_key2020", None)
         license2019 = MD_REF.getPreferences().getSetting(u"gen.lic_key2019", None)
-        license2018 = MD_REF.getPreferences().getSetting(u"gen.lic_key2018", None)
         license2017 = MD_REF.getPreferences().getSetting(u"gen.lic_key2017", None)
         license2015 = MD_REF.getPreferences().getSetting(u"gen.lic_key2015", None)
         license2014 = MD_REF.getPreferences().getSetting(u"gen.lic_key2014", None)
@@ -5890,19 +5861,24 @@ Visit: %s (Author's site)
 
                 del licenseInfo
 
-        if license2023:      textArray.append(u" >old licenses (2023): " + license2023)
-        if license2022:      textArray.append(u" >old licenses (2022): " + license2022)
-        if license2021:      textArray.append(u" >old licenses (2021): " + license2021)
-        if license2020:      textArray.append(u" >old licenses (2020): " + license2020)
-        if license2019:      textArray.append(u" >old licenses (2019): " + license2019)
-        if license2018:      textArray.append(u" >old licenses (2018): " + license2018)
-        if license2017:      textArray.append(u" >old licenses (2017): " + license2017)
-        if license2015:      textArray.append(u" >old licenses (2015): " + license2015)
-        if license2014:      textArray.append(u" >old licenses (2014): " + license2014)
-        if license2011:      textArray.append(u" >old licenses (2011): " + license2011)
-        if license2010:      textArray.append(u" >old licenses (2010): " + license2010)
-        if license2008:      textArray.append(u" >old licenses (2008): " + license2008)
-        if license2004:      textArray.append(u" >old licenses (2004): " + license2004)
+        if license2024:      textArray.append(u" >prior license (2024): " + license2024)
+        if license2023:      textArray.append(u" >prior license (2023): " + license2023)
+        if license2022:      textArray.append(u" >prior license (2022): " + license2022)
+        if license2021:      textArray.append(u" >prior license (2021): " + license2021)
+        if license2019:      textArray.append(u" >prior license (2019): " + license2019)
+        if license2017:      textArray.append(u" >prior license (2017): " + license2017)
+        if license2015:      textArray.append(u" >prior license (2015): " + license2015)
+        if license2014:      textArray.append(u" >prior license (2014): " + license2014)
+        if license2011:      textArray.append(u" >prior license (2011): " + license2011)
+        if license2010:      textArray.append(u" >prior license (2010): " + license2010)
+        if license2008:      textArray.append(u" >prior license (2008): " + license2008)
+        if license2004:      textArray.append(u" >prior license (2004): " + license2004)
+
+        if isNoSplashScreenOptionsBuild() and File(MD_REF.getPlatformHelper().getRootPath(), UserPreferences.SUPPRESS_SPLASH_FILENAME).exists():
+            textArray.append(u"\nLaunch splash screen is SUPRESSED")
+
+        if isSuppressBackupsOptionBuild() and MD_REF.SUPPRESS_BACKUPS:
+            textArray.append(u"\nLaunched with '-nobackup' parameter - Backups are SUPRESSED!")
 
         if not MD_REF.getCurrentAccountBook(): textArray.append(u"Moneydance datafile is empty")
         x = MD_REF.getPreferences().getSetting(GlobalVars.Strings.MD_CONFIGDICT_CURRENT_ACCOUNT_BOOK, None)
@@ -6363,7 +6339,9 @@ Visit: %s (Author's site)
             textArray.append(u"Font:      %s" %(MD_REF.getPreferences().getSetting(u"print.font_name", u"")))
             textArray.append(u"Font Size: %s" %(MD_REF.getPreferences().getSetting(u"print.font_size", u"12")))
 
-        textArray.append(u"\n>> BACKUPS")
+        extraBackupTxt = ""
+        if isSuppressBackupsOptionBuild() and MD_REF.SUPPRESS_BACKUPS: extraBackupTxt = u" (THESE SETTINGS ARE BEING IGNORED AS BACKUPS ARE SUPPRESSED!)"
+        textArray.append(u"\n>> BACKUPS%s" %(extraBackupTxt))
 
         destroyBackupChoicesStr = MD_REF.getPreferences().getSetting(UserPreferences.BACKUP_DESTROY_NUMBER, "5")
 
@@ -9466,7 +9444,7 @@ Visit: %s (Author's site)
 
         try:
             st = StreamTable()
-            st.readFromFile(str(cf))
+            st.readFromFile(cf)
             tk = st.getKeyArray()
             tk = sorted(tk)
         except:
@@ -16711,127 +16689,6 @@ after saving the file, restart Moneydance
         QuickJFrame(_THIS_METHOD_NAME.upper(), output, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB, lWrapText=False, lAutoSize=True).show_the_frame()
 
 
-    def view_shouldBeIncludedInNetWorth_settings():
-        if MD_REF.getCurrentAccountBook() is None: return
-
-        _THIS_METHOD_NAME = "View Accounts' shouldBeIncludedInNetWorth() settings"
-
-        output = "\n" \
-                 "%s:\n" \
-                 " ======================================================\n\n" %(_THIS_METHOD_NAME.upper())
-
-        output += "Moneydance predefines rules to include/exclude Accounts in the Home Summary Page NetWorthView widget, & also the Titlebar NW instant graph\n" \
-                  "- If the Account or Parent is Inactive, then it's excluded\n" \
-                  "- ROOT and Income/Expense Categories are excluded\n" \
-                  "- Then it checks for a hidden Account setting >> You can set this in Toolbox Update Mode\n" \
-                  "- You cannot force include an account into these, you can only force exclude accounts....\n" \
-                  "\n" \
-                  "Other NetWorth rules for information:\n" \
-                  "- NW Reports / Graphs are based on transactions up to the date you specify; uses Price history data for balance valuations\n" \
-                  "- The Top title bar NW Graph's cutoff date can be changed: 'All Dates' includes future Balances; uses Price history data for balance valuations\n" \
-                  "- The Home Screen View NW widget total ALWAYS uses Current Balance(s) - so future balances are excluded; uses Current Price\n" \
-                  "\n\n"
-
-        output += "%s %s %s %s\n" %(pad("Account Name",50),
-                                    pad("Account Type",20),
-                                    pad("shouldBeIncludedInNetWorth()",30),
-                                    pad("Override Setting",20))
-
-        output += "%s %s %s %s\n" %("-"*50,
-                                    "-"*20,
-                                    "-"*30,
-                                    "-"*20)
-
-        output += "\n"
-
-        allAccounts = AccountUtil.allMatchesForSearch(MD_REF.getCurrentAccountBook(), MyAcctFilter(25))
-        allAccounts = sorted(allAccounts, key=lambda x: (x.getAccountType(), x.getFullAccountName().upper()))
-
-        for acct in allAccounts:
-            output += "%s %s %s %s\n" %(pad(acct.getFullAccountName(),50),
-                                        pad(str(acct.getAccountType()),20),
-                                        pad(str(acct.shouldBeIncludedInNetWorth()),30),
-                                        ("NOT SET" if (not acct.getParameter(GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, None)) else (str(acct.getBooleanParameter(GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, True)))))
-        output += "\n<END>"
-
-        txt = "%s: - Displaying NetWorth Settings" %(_THIS_METHOD_NAME)
-        setDisplayStatus(txt, "B")
-        QuickJFrame(_THIS_METHOD_NAME.upper(), output,copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB, lWrapText=False, lAutoSize=True).show_the_frame()
-
-    def edit_shouldBeIncludedInNetWorth_settings():
-        if MD_REF.getCurrentAccountBook() is None: return
-
-        _THIS_METHOD_NAME = "EDIT an Account's shouldBeIncludedInNetWorth() setting"
-
-        allAccounts = AccountUtil.allMatchesForSearch(MD_REF.getCurrentAccountBook(), MyAcctFilter(25))
-        allAccounts = sorted(allAccounts, key=lambda x: (x.getAccountType(), x.getFullAccountName().upper()))
-
-        newAccounts = []
-        for acct in allAccounts: newAccounts.append(StoreAccountList(acct))
-        del allAccounts
-
-        lPresentedBackupDisclaimer = False
-        iCountChanges = 0
-
-        while True:
-
-            selectedAcct = JOptionPane.showInputDialog(toolbox_frame_,
-                                                       "Select the Acct edit the shouldBeIncludedInNetWorth() setting",
-                                                       _THIS_METHOD_NAME.upper(),
-                                                       JOptionPane.INFORMATION_MESSAGE,
-                                                       getMDIcon(lAlwaysGetIcon=True),
-                                                       newAccounts,
-                                                       None)
-            if not selectedAcct: break
-
-            selectedAcct = selectedAcct.obj       # type: Account                                                       # noqa
-
-            currentNWsettingBool = selectedAcct.getBooleanParameter(GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, True)
-
-            options = ["YES - Include", "NO - Exclude"]
-            if currentNWsettingBool:
-                current = options[0]
-            else:
-                current = options[1]
-
-            selectedIncludeInNW = JOptionPane.showInputDialog(toolbox_frame_,
-                                                       "Select whether to include/exclude this account in the default NW Home Screen Widget & Titlebar Graph",
-                                                       _THIS_METHOD_NAME.upper()+" for: %s" %(selectedAcct.getAccountName()),
-                                                       JOptionPane.WARNING_MESSAGE,
-                                                       getMDIcon(None),
-                                                       options,
-                                                       current)
-            if not selectedIncludeInNW: continue
-
-            if not lPresentedBackupDisclaimer:
-                if not confirm_backup_confirm_disclaimer(toolbox_frame_, _THIS_METHOD_NAME.upper(), "Change 'include in NW' to '%s'?" %(selectedIncludeInNW)):
-                    return
-                lPresentedBackupDisclaimer = True
-
-            if options.index(selectedIncludeInNW) == 0:
-                # Include selected
-                selectedAcct.setParameter(GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, None)
-            else:
-                # Exclude selected
-                selectedAcct.setParameter(GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, False)
-
-            selectedAcct.syncItem()
-            iCountChanges += 1
-
-            txt = "%s: Account: '%s' Parameter: '%s' set to %s" %(_THIS_METHOD_NAME, selectedAcct, GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, selectedIncludeInNW)
-            setDisplayStatus(txt, "B"); myPrint("B", txt)
-            logToolboxUpdates("edit_shouldBeIncludedInNetWorth_settings", txt)
-            myPopupInformationBox(toolbox_frame_,txt)
-
-            continue
-
-        if iCountChanges:
-            txt = "%s: Updated the NW setting in %s Account(s)!" %(_THIS_METHOD_NAME, iCountChanges)
-        else:
-            txt = "%s: No Accounts changed" %(_THIS_METHOD_NAME)
-        setDisplayStatus(txt, "R")
-        myPopupInformationBox(toolbox_frame_,txt,theMessageType=JOptionPane.WARNING_MESSAGE)
-
     def zero_bal_categories(lFix):
         if lFix:
             myPrint("DB","User requested to Inactivate Zero Balance Categories!")
@@ -18672,6 +18529,7 @@ after saving the file, restart Moneydance
     def thin_price_history():
         # based on: price_history_thinner.py
         # (also includes elements from 2017_remove_orphaned_currency_history_entries.py)
+        # upgraded August 2025 to exclude snaps just before/after/on stock split dates
 
         if MD_REF.getCurrentAccountBook() is None: return
         if MD_REF.getCurrentAccountBook().getSyncer() is None: return
@@ -18822,8 +18680,7 @@ after saving the file, restart Moneydance
         x, y = does_base_has_snaps()
         diagDisplay += x
 
-        jif = QuickJFrame("Price History Analysis", diagDisplay,copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
-
+        jif = QuickJFrame("Price History Analysis", diagDisplay, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
 
         if orphanSnaps > 0:
             MyPopUpDialogBox(jif,
@@ -19257,17 +19114,17 @@ after saving the file, restart Moneydance
 
         del orphanSnaps
 
-        def prune_snapshots(_curr, THINMODE, age_limit_days, max_days_between_thinned, lDelete=False, lVerbose=False):        # noqa
+        def prune_snapshots(_curr, THINMODE, age_limit_days, max_days_between_thinned, lDelete=False, lVerbose=False):  # noqa
 
             if THINMODE: ThnTxt="THIN"
             else: ThnTxt="PURGE"
 
             age_limit_date = DateUtil.incrementDate(DateUtil.getStrippedDateInt(), 0, 0, -(age_limit_days))
-            text = "\n>%s: %s'ing snapshots older than %s\n" %(_curr, ThnTxt, convertStrippedIntDateFormattedText(age_limit_date))
+            text = "\n>%s: %s'ing snapshots older than %s (will always protect snaps near (any) stock split dates)\n" %(_curr, ThnTxt, convertStrippedIntDateFormattedText(age_limit_date))
             text += "  %s BEFORE %s (snapshots: %s, splits: %s)\n"%(_curr, ThnTxt, _curr.getSnapshots().size(), _curr.getSplits().size())
             _snapshots = _curr.getSnapshots()
             old_snapshots = []
-            countChanges  = 0
+            countChanges = 0
             saveFirstSnapPreserved = None
             for snapshot in _snapshots:
                 if snapshot.getDateInt() < age_limit_date:
@@ -19284,8 +19141,44 @@ after saving the file, restart Moneydance
                 myPrint("B","@@ LOGIC ERROR why saveFirstSnapPreserved == None?")
                 saveFirstSnapPreserved = age_limit_date
 
+            # --- protect snapshots around splits: prev, on, next ---
+            keep_dates = set()
+            splits = _curr.getSplits() if _curr.getCurrencyType() == CurrencyType.Type.SECURITY else None
+            if splits is None or splits.size() < 1:
+                text += "  > NOTE: No stock splits to worry about\n"
+            else:
+                text += "  > NOTE: Preserving snapshots in the vicinity of %s stock splits found\n" %(splits.size())
+                # snapshots are oldest->newest
+                _all_snap_dates = [s.getDateInt() for s in _snapshots]
+                n = len(_all_snap_dates)
+                for sp in splits:
+                    _splitDate = sp.getDateInt()
+                    # find first index i where _all_snap_dates[i] >= _splitDate
+                    i = 0
+                    while i < n and _all_snap_dates[i] < _splitDate: i += 1
+                    # prev
+                    if i > 0:
+                        keep_dates.add(_all_snap_dates[i-1])
+                        text += "  ... split dated: %s >> preserved snapshot dated: %s (before)\n" %(convertStrippedIntDateFormattedText(_splitDate), convertStrippedIntDateFormattedText(_all_snap_dates[i-1]))
+                    # on + next (if on exists)
+                    if i < n and _all_snap_dates[i] == _splitDate:
+                        text += "  ... split dated: %s >> preserved snapshot dated: %s (ON SPLIT DATE)\n" %(convertStrippedIntDateFormattedText(_splitDate), convertStrippedIntDateFormattedText(_splitDate))
+                        keep_dates.add(_splitDate)
+                        if i+1 < n:
+                            keep_dates.add(_all_snap_dates[i+1])
+                            text += "  ... split dated: %s >> preserved snapshot dated: %s (after)\n" %(convertStrippedIntDateFormattedText(_splitDate), convertStrippedIntDateFormattedText(_all_snap_dates[i+1]))
+                    else:
+                        # no on-split snapshot → keep first-after
+                        if i < n:
+                            keep_dates.add(_all_snap_dates[i])
+                            text += "  ... split dated: %s >> preserved snapshot dated: %s (after) **NO ON SPLIT DATE DETECTED**\n" %(convertStrippedIntDateFormattedText(_splitDate), convertStrippedIntDateFormattedText(_all_snap_dates[i]))
+
             last_date = 0
-            text += "  %s snapshot(s) are older than cutoff date and eligible to be %s'd'..\n" %(len(old_snapshots),ThnTxt)
+
+            if len(keep_dates) > 0:
+                text += "  %s snapshot(s) have date(s) in the vicinity of stock-split dates (i.e. just before/after/on split-date) these will be EXCLUDED and not be %s'd'..\n" %(len(keep_dates), ThnTxt)
+
+            text += "  %s snapshot(s) are older than cutoff date and eligible to be %s'd'..\n" %(len(old_snapshots), ThnTxt)
             num_thinned = 0
             # This presumes the data is presented oldest, to newest, which the inbuilt comparator/sort seems to do...
 
@@ -19294,20 +19187,25 @@ after saving the file, restart Moneydance
                 snapshot = old_snapshots[_i]
                 snap_date = snapshot.getDateInt()
 
-                if _i+1 < len(old_snapshots):                        # not at end of the records
-                    safetyDate = old_snapshots[_i + 1].getDateInt()    # take a peek at the next record..
+                # never delete snapshots around splits
+                if snap_date in keep_dates:
+                    if lVerbose:
+                        text += "    > Not deleting snapshot dated %s (protected: split vicinity)\n" %(convertStrippedIntDateFormattedText(snap_date))
+                    last_date = snap_date
+                    continue
+
+                if _i+1 < len(old_snapshots):                           # not at end of the records
+                    safetyDate = old_snapshots[_i + 1].getDateInt()     # take a peek at the next record..
                 else:
                     safetyDate = saveFirstSnapPreserved
 
                 if (not THINMODE) \
                         or (THINMODE and DateUtil.calculateDaysBetween(last_date, snap_date) < max_days_between_thinned
-                            and DateUtil.calculateDaysBetween(last_date, safetyDate) < max_days_between_thinned+1):  # This ensures there's no huge leap to the next date......
-                    if lVerbose:
-                        text += "    *** delete snapshot dated %s\n" %(convertStrippedIntDateFormattedText(snap_date))
+                            and DateUtil.calculateDaysBetween(last_date, safetyDate) < max_days_between_thinned+1):     # This ensures there's no huge leap to the next date......
+                    if lVerbose: text += "    *** delete snapshot dated %s\n" %(convertStrippedIntDateFormattedText(snap_date))
                     num_thinned += 1
                     if lDelete:
-                        if lVerbose:
-                            myPrint("B","%s PRICE HISTORY: Deleting snapshot: %s" %(ThnTxt,repr(snapshot)))
+                        if lVerbose: myPrint("B","%s PRICE HISTORY: Deleting snapshot: %s" %(ThnTxt, repr(snapshot)))
                         countChanges += 1
                         snapshot.deleteItem()
                 else:
@@ -19318,8 +19216,8 @@ after saving the file, restart Moneydance
                 _i+=1
 
             if len(old_snapshots):
-                text += "  >> %s'd %s of %s eligible (old) snapshots (%s%%) from %s\n"%(ThnTxt, num_thinned, len(old_snapshots), 100*num_thinned/len(old_snapshots), _curr.getName())
-                text += "  >> %s'd %s of %s total snapshots          (%s%%) from %s\n"%(ThnTxt, num_thinned, len(_snapshots), 100*num_thinned/len(_snapshots), _curr.getName())
+                text += "  >> %s'd %s of %s eligible (old) snapshots (%s%%) from %s\n"%(ThnTxt, num_thinned, len(old_snapshots), 100.0 * num_thinned/float(len(old_snapshots)), _curr.getName())
+                text += "  >> %s'd %s of %s total snapshots          (%s%%) from %s\n"%(ThnTxt, num_thinned, len(_snapshots), 100.0 * num_thinned/float(len(_snapshots)), _curr.getName())
             else:
                 text += "  >> No old snapshots %s'd from %s\n" %(ThnTxt, _curr.getName())
 
@@ -22227,8 +22125,11 @@ after saving the file, restart Moneydance
 
         PARAMETER_KEY = "toolbox_fix_non_hier_sec_acct_txns"
 
+        MD_decimal = MD_REF.getPreferences().getDecimalChar()
+
         book = MD_REF.getCurrentAccountBook()
         base = MD_REF.getCurrentAccountBook().getCurrencies().getBaseType()
+        sdf = MD_REF.getPreferences().getShortDateFormatter()
 
         # fix_non-hierarchical_security_account_txns.py
         # (replaces fix_investment_txns_to_wrong_security.py)
@@ -22276,9 +22177,10 @@ after saving the file, restart Moneydance
 
                 if fields.hasSecurity and fields.security is None:
                     iOrphans += 1
-                    txt = "ERROR: Txn for 'Orphaned' Security %s found within Investment Account %s! (old QIF import or you have force removed a Security with linked TXNs?\n" \
-                          "txn:\n%s\n" %(fields.security, _acct, _txn.getSyncInfo().toMultilineHumanReadableString())
-                    output += "\n%s\n" %(txt); myPrint("B",txt)
+                    txt = "ERROR: Txn for 'Orphaned' Security: '%s' found within Investment Account: '%s'! (old QIF import or you have force removed a Security with linked TXNs?\n" \
+                          "Date: %s\n" \
+                          "txn:\n%s\n" %(fields.security, _acct, sdf.format(fields.date), _txn.getSyncInfo().toMultilineHumanReadableString())
+                    output += "\n%s\n----------\n" %(txt); myPrint("B",txt)
                     saveInvestmentAccountsNeedingDummy[_acct] = True
 
             if iOrphans:
@@ -22333,8 +22235,9 @@ after saving the file, restart Moneydance
                 newSecurity.setTickerSymbol("^TOOLBOX")
                 newSecurity.setDecimalPlaces(4)
                 newSecurity.setRelativeRate(1.0)
+                newSecurity.setParameter(PARAMETER_KEY, True)
                 newSecurity.syncItem()
-                output += "\n\nCreated dummy Security: %s (%s)\n" %(newSecurity, newSecurity.getUUID())
+                output += "\n\nCreated dummy Security: '%s' (%s)\n" %(newSecurity, newSecurity.getUUID())
 
                 dummySecurityAccounts = {}
 
@@ -22359,15 +22262,28 @@ after saving the file, restart Moneydance
                             newSecurityAcct.setComment("Dummy created by Toolbox: %s" %(_THIS_METHOD_NAME))
                             newSecurityAcct.setParameter(PARAMETER_KEY, True)
                             newSecurityAcct.syncItem()
-                            output += "\nCreated dummy Security Sub Account: %s (%s) linked to new dummy security\n" %(newSecurityAcct, newSecurityAcct.getUUID())
+                            output += "\nCreated dummy Security Sub Account: '%s' (%s) linked to new dummy security\n" %(newSecurityAcct, newSecurityAcct.getUUID())
                             dummySecurityAccounts[_acct] = newSecurityAcct
+
+                        xfrSplit = TxnUtil.getXfrPart(_txn)
+                        origXfrValue = 0L if xfrSplit is None else xfrSplit.getValue()
 
                         fields.security = dummySecurityAccounts[_acct]
                         fields.storeFields(_txn)
+                        _txn.setParameter(PARAMETER_KEY, True)
                         _txn.syncItem()
 
-                        txt = "FIXED: Txn for 'Orphaned' Security - Investment Account %s: '%s'\n" %(_acct, _txn)
+                        xfrSplit = TxnUtil.getXfrPart(_txn)
+                        newXfrValue = 0L if xfrSplit is None else xfrSplit.getValue()
+
+                        txt = "FIXED: Txn for 'Orphaned' Security - Investment Account: '%s': '%s'\n" %(_acct, _txn)
                         output += "\n%s\n" %(txt)
+
+                        if (origXfrValue != newXfrValue):
+                            _ct = _acct.getCurrencyType()
+                            output += (">> WARNING: Transfer value (for txn fixed ^above^) has changed from %s to %s (probably as shares qty and value are illogically zero) - MANUAL EDIT REQUIRED TO FIX XFR AND CASH BALANCE(S)!\n"
+                                       %(_ct.formatFancy(origXfrValue, MD_decimal), _ct.formatFancy(newXfrValue, MD_decimal)))
+
 
                 output += "\nFinished fixing 'orphans'....\n" \
                           " -----------------------------\n\n"
@@ -22380,7 +22296,9 @@ after saving the file, restart Moneydance
             ############################################################################################################
 
             def review_security_accounts(_txns, FIX_MODE=False):
-
+                txnTypeTag = "invest.txntype"
+                xferTypeTag = "xfer_type"
+                legacyBuySellXfrTag = "xfrtp_buysellxfr"
                 count_the_errors = 0
                 count_unfixable_yet = 0
                 errors_fixed = 0
@@ -22400,31 +22318,57 @@ after saving the file, restart Moneydance
 
                     if fields.hasSecurity and not acct.isAncestorOf(fields.security):
                         count_the_errors += 1
+
+                        lTagOnlyError = False
+                        if (fields.hasSecurity and fields.security is None and not isSittingInInvestmentAccount
+                                and txn.getParentTxn().getParameter(xferTypeTag, None) == legacyBuySellXfrTag
+                                and txn.getParentTxn().getParameter(txnTypeTag, "") == ""):
+                            lTagOnlyError = True
+
                         txnTxt = txn.toMultilineString().replace(";",";\n")
-                        text += ("Must fix txn %s\n"
+
+                        text += ("\nMust fix txn: %s\n"
+                                 "Date: %s\n"
                                  "%s\n"
-                                 " > in '%s' with sec acct '%s'\n" %(fields.txnType,
+                                 " > in acct: '%s' with sec acct: '%s'\n" %(fields.txnType, sdf.format(fields.date),
                                                                  txnTxt,
                                                                  acct,
                                                                  (None if (fields.security is None) else fields.security.getFullAccountName())))
 
+                        if lTagOnlyError: text += " > TAG WARNING ONLY!\n"
+
                         if not isSittingInInvestmentAccount:
-                            if fields.security is None:
-                                text += ("** CANNOT FIX Txn where the Parent is sitting within an %s account ('%s') and the SECURITY is NONE - SKIPPING **"
+                            if fields.security is None and not lTagOnlyError:
+                                text += ("** CANNOT FIX Txn where the Parent is sitting within an %s account ('%s') and the SECURITY is NONE - SKIPPING **\n ----\n\n"
                                          %(getAccountTypeTxt(acct), acct.getFullAccountName()))
                                 continue
 
-                            # This fix is for where the investment txn is not sitting within an Investment account (batch change on xfr category usually)...
-                            text += " >> LOGICAL ERROR as Parent txn is sitting within an %s account **\n" %(getAccountTypeTxt(acct))
-                            correctParentAcct = fields.security.getParentAccount()
-                            if FIX_MODE:
-                                errors_fixed += 1
-                                text += (" -> ASSIGNING txn's Parent account to '%s'\n" %(correctParentAcct))
-                                txn.setAccount(correctParentAcct)
-                                txn.syncItem()
+                            if lTagOnlyError:
+                                # This fix is for where there seems to only be a legacy xfrtp_buysellxfr txn type on a txn with no security in a non-investment account
+                                text += " >> LOGICAL ERROR as legacy '%s' tag '%s' found (with no security) in a non-investment account **\n" %(xferTypeTag, legacyBuySellXfrTag)
+                                if FIX_MODE:
+                                    errors_fixed += 1
+                                    text += (" -> REMOVING txn's legacy '%s' tag of '%s'\n" %(xferTypeTag, legacyBuySellXfrTag))
+                                    txn.setTransferType("")           # do this first to also reset the internal variable
+                                    txn.removeParameter(xferTypeTag)  # do this too to then nuke the setting completly
+                                    txn.setParameter(PARAMETER_KEY, True)
+                                    txn.syncItem()
+                                else:
+                                    text+=(" -> need to remove the legacy '%s' tag\n" %(legacyBuySellXfrTag))
+                                continue
                             else:
-                                text+=(" -> need to assign txn's Parent account to '%s'\n" %(correctParentAcct))
-                            continue
+                                # This fix is for where the investment txn is not sitting within an Investment account (batch change on xfr category usually)...
+                                text += " >> LOGICAL ERROR as Parent txn is sitting within an '%s' account **\n" %(getAccountTypeTxt(acct))
+                                correctParentAcct = fields.security.getParentAccount()
+                                if FIX_MODE:
+                                    errors_fixed += 1
+                                    text += (" -> ASSIGNING txn's Parent account to '%s'\n" %(correctParentAcct))
+                                    txn.setAccount(correctParentAcct)
+                                    txn.setParameter(PARAMETER_KEY, True)
+                                    txn.syncItem()
+                                else:
+                                    text+=(" -> need to assign txn's Parent account to '%s'\n" %(correctParentAcct))
+                                continue
                         else:
                             # This fix assumes that the split / security bit should sit within the txn's parent account. It seeks for the same
                             # security in this account and reattaches it.
@@ -22477,7 +22421,7 @@ after saving the file, restart Moneydance
                                     newSecurityAcct.setSecuritySubType(fields.security.getSecuritySubType())
                                     newSecurityAcct.setStrikePrice(fields.security.getStrikePrice())
 
-                                    for param in ["hide","hide_on_hp","ol.haspendingtxns", "ol.new_txn_count"]:
+                                    for param in ["hide","hide_on_hp", "ol.haspendingtxns", "ol.new_txn_count"]:
                                         newSecurityAcct.setParameter(param, fields.security.getParameter(param))
 
                                     newSecurityAcct.setParameter(PARAMETER_KEY,True)
@@ -22485,7 +22429,7 @@ after saving the file, restart Moneydance
 
                                     correctSecAcct = newSecurityAcct
                                 else:
-                                    text+=(" -> will need to auto-create/add Security and then assign txn to %s\n" %(acct))
+                                    text+=(" -> will need to auto-create/add Security and then assign txn to '%s'\n" %(acct))
 
                             if correctSecAcct:
                                 if FIX_MODE:
@@ -22493,9 +22437,10 @@ after saving the file, restart Moneydance
                                     text+=(" -> ASSIGNING txn to '%s'\n" %(correctSecAcct.getFullAccountName()))
                                     fields.security = correctSecAcct
                                     fields.storeFields(txn)
+                                    txn.setParameter(PARAMETER_KEY, True)
                                     txn.syncItem()
                                 else:
-                                    text+=(" -> need to assign txn to '%s'\n" %(correctSecAcct.getFullAccountName()))
+                                    text += (" -> need to assign txn to '%s'\n" %(correctSecAcct.getFullAccountName()))
 
                 del _txns
                 return text, count_the_errors, count_unfixable_yet, errors_fixed
@@ -22531,6 +22476,14 @@ after saving the file, restart Moneydance
 
             jif = None
             if not autofix:
+                if lFixedOrphans:
+                    txt = ("\nWARNING - Sucessfully fixed %s orphans - But found %s subsequent problems - review log and then re-run this fix!\n" %(iOrphans, iCountErrors)).upper()
+                    output += "\n%s\n" %(txt); myPrint("B", txt)
+                    setDisplayStatus(txt, "R")
+                    jif = QuickJFrame("VIEW Investment Security Txns with both fixed orphans and subsequent errors".upper(), output, lAlertLevel=1, lWrapText=False, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB, lRestartMDAfterClose=False).show_the_frame()
+                    myPopupInformationBox(jif, txt)
+                    return
+
                 jif = QuickJFrame("VIEW Investment Security Txns with Invalid Parent Accounts".upper(), output, lAlertLevel=1, lWrapText=False, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
 
             # if iCountUnfixable>0:
@@ -22564,7 +22517,7 @@ after saving the file, restart Moneydance
             MD_REF.getUI().setSuspendRefresh(False)		# This does this too: book.notifyAccountModified(root)
 
             output += x
-            output += "\n\nYou had %s non-hierarchical txn errors... FIXED %s\n\n" %(iCountErrors, iErrorsFixed)
+            output += "\n\nYou had %s non-hierarchical txn errors... FIXED: %s\n\n" %(iCountErrors, iErrorsFixed)
             output += "\n<END>"
 
             txt = "FIXED %s Investment Security Txns with Invalid Parent Accounts (non-hierarchical txn errors)" %(iErrorsFixed)
@@ -22574,8 +22527,8 @@ after saving the file, restart Moneydance
             if not autofix:
                 play_the_money_sound()
                 setDisplayStatus(txt, "B")
-                jif = QuickJFrame(_THIS_METHOD_NAME, output, lAlertLevel=1, lWrapText=False, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
-                myPopupInformationBox(jif,txt, _THIS_METHOD_NAME, JOptionPane.WARNING_MESSAGE)
+                jif = QuickJFrame(_THIS_METHOD_NAME, output, lAlertLevel=1, lWrapText=False, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB, lRestartMDAfterClose=False).show_the_frame()
+                myPopupInformationBox(jif, txt, _THIS_METHOD_NAME, JOptionPane.WARNING_MESSAGE)
             else:
                 myPrint("B", "AUTOFIX ENDING....")
 
@@ -25689,260 +25642,6 @@ after saving the file, restart Moneydance
     #     logToolboxUpdates("advanced_options_set_check_days", txt)
     #     myPopupInformationBox(toolbox_frame_,txt,"NEXT CHEQUE NUMBER ALGORITHM", JOptionPane.WARNING_MESSAGE)
 
-    def advanced_options_edit_parameter_keys():
-        if MD_REF.getCurrentAccountBook() is None: return
-
-        if not myPopupAskQuestion(toolbox_frame_,"EDIT OBJs MODE","DANGER - ARE YOU SURE YOU WANT TO VISIT THIS FUNCTION?", theMessageType=JOptionPane.ERROR_MESSAGE):
-            txt = "Edit Obj Mode - User declined to proceed - aborting.."
-            setDisplayStatus(txt, "R")
-            return
-
-        objSelecter = CuriousViewInternalSettingsButtonAction(lOFX=False, EDIT_MODE=True)
-        theObject = objSelecter.actionPerformed("")  # type: list
-        del objSelecter
-
-        if theObject is None or len(theObject)!= 1:
-            # txt = "ADVANCED Edit Obj Mode - No Object selected/found - aborting.."
-            # setDisplayStatus(txt, "R")
-            return
-
-        theObject = theObject[0]            # type: MoneydanceSyncableItem
-
-        _ADVANCED_KEYADD          = 0
-        _ADVANCED_KEYCHG          = 1
-        _ADVANCED_KEYDEL          = 2
-        _ADVANCED_RECORDDELETE    = 3
-
-        what = [
-            "Object ADD    Parameter Key (and data)",
-            "Object CHANGE Parameter Key's Data",
-            "Object DELETE Parameter Key (and it's data)",
-            "DELETE OBJECT - NOT RECOMMENDED!"
-        ]
-
-        while True:
-
-            lAdd = lChg = lDel = lDeleteRecord = False
-
-            selectedWhat = JOptionPane.showInputDialog(toolbox_frame_,
-                                                       "Select the option for the modification (on %s)?" %(theObject),
-                                                       "ADVANCED",
-                                                       JOptionPane.WARNING_MESSAGE,
-                                                       getMDIcon(None),
-                                                       what,
-                                                       None)
-
-            if not selectedWhat:
-                txt = "ADVANCED - Exiting"
-                setDisplayStatus(txt, "B")
-                return
-
-            if selectedWhat == what[_ADVANCED_KEYADD]:          lAdd = True
-            if selectedWhat == what[_ADVANCED_KEYCHG]:          lChg = True
-            if selectedWhat == what[_ADVANCED_KEYDEL]:          lDel = True
-            if selectedWhat == what[_ADVANCED_RECORDDELETE]:    lDeleteRecord = True
-
-            text = ""
-            if lChg:            text = "ADD"
-            if lChg:            text = "CHANGE"
-            if lDel:            text = "DELETE"
-            if lDeleteRecord:   text = "DELETE OBJECT"
-
-            if lAdd:
-                addKey = myPopupAskForInput(toolbox_frame_,
-                                            "ADD PARAMETER TO %s" % (theObject),
-                                            "PARAMETER:",
-                                            "Carefully enter the name of the Parameter you want to add (cAseMaTTers!) - STRINGS ONLY:",
-                                            "",
-                                            False,
-                                            JOptionPane.WARNING_MESSAGE)
-
-                if not addKey or len(addKey.strip()) < 1: continue
-                addKey = addKey.strip()
-
-                if not check_if_key_string_valid(addKey):
-                    myPopupInformationBox(toolbox_frame_, "ERROR: Parameter %s is NOT valid!" % addKey, "ADD TO %s" %(theObject), JOptionPane.ERROR_MESSAGE)
-                    continue    # back to ADVANCED Options menu
-
-                testKeyExists = theObject.getParameter(addKey,None)                                                     # noqa
-
-                if testKeyExists:
-                    myPopupInformationBox(toolbox_frame_, "ERROR: Parameter %s already exists - cannot add - aborting..!" %(addKey), "ADD TO %s" %(theObject), JOptionPane.ERROR_MESSAGE)
-                    continue    # back to ADVANCED Options menu
-
-                addValue = myPopupAskForInput(toolbox_frame_,
-                                              "ADD PARAMETER VALUE TO %s" %(theObject),
-                                              "VALUE:",
-                                              "Carefully enter the value you want to add (STRINGS ONLY! CaSE MattERS):",
-                                              "",
-                                              False,
-                                              JOptionPane.WARNING_MESSAGE)
-
-                if not addValue or len(addValue.strip()) <1: continue
-                addValue = addValue.strip()
-
-                if not check_if_key_data_string_valid(addValue):
-                    myPopupInformationBox(toolbox_frame_, "ERROR: Parameter value %s is NOT valid!" %(addValue), "ADD TO %s" %(theObject), JOptionPane.ERROR_MESSAGE)
-                    continue    # back to ADVANCED Options menu
-
-                if confirm_backup_confirm_disclaimer(toolbox_frame_, "ADVANCED OPTIONS", "ADD PARAMETER VALUE TO %s" %(theObject)):
-
-                    theObject.setParameter(addKey,addValue)                                                             # noqa
-                    if isinstance(theObject, SplitTxn):                                                                 # noqa
-                        theObject.getParentTxn().syncItem()                                                             # noqa
-                    else:
-                        theObject.syncItem()                                                                            # noqa
-                    txt = "Parameter: %s Value: %s added to %s @@" %(addKey,addValue,theObject)
-                    setDisplayStatus(txt, "R"); myPrint("B", txt)
-                    logToolboxUpdates("advanced_options_edit_parameter_keys", txt)
-                    play_the_money_sound()
-                    myPopupInformationBox(toolbox_frame_,
-                                          "SUCCESS: Key %s added to %s!" % (addKey,theObject),
-                                          "ADD TO %s" %(theObject),
-                                          JOptionPane.WARNING_MESSAGE)
-                    continue
-
-                continue
-
-            # DELETE OBJECT  :-<
-            if lDeleteRecord:
-
-                output =  "%s PLEASE REVIEW PARAMETER & VALUE BEFORE DELETING OBJECT\n" %(theObject)
-                output += " --------------------------------------------------------\n\n"
-
-                if isinstance(theObject, SplitTxn):
-                    txt = theObject.getParentTxn().getSyncInfo().toMultilineHumanReadableString()
-                else:
-                    txt = theObject.getSyncInfo().toMultilineHumanReadableString()
-
-                output += "\n%s\n" %(txt)
-
-                output += "\n<END>"
-                if isinstance(theObject, SplitTxn):
-                    jif = QuickJFrame("REVIEW THE SPLIT TXN's DATA BEFORE DELETION (OF THE SPLIT)", output, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
-                elif isinstance(theObject, ParentTxn):
-                    jif = QuickJFrame("REVIEW THE PARENT'S TXN DATA BEFORE DELETION (OF THE WHOLE PARENT TXN)", output, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
-                else:
-                    jif = QuickJFrame("REVIEW THE OBJECT's DATA BEFORE DELETION", output, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
-
-                if confirm_backup_confirm_disclaimer(jif, "DELETE OBJECT", "DELETE OBJECT %s" %(theObject)):
-
-                    if isinstance(theObject, SplitTxn):                                                                 # noqa
-                        # This will delete the split only; thus we also must sync the parent
-                        theObject.deleteItem()                                                                          # noqa
-                        theObject.getParentTxn().syncItem()                                                             # noqa
-                    else:
-                        theObject.deleteItem()                                                                          # noqa
-
-                    txt = "ADVANCED OPTIONS: OBJECT %s DELETED @@" %(theObject)
-                    setDisplayStatus(txt, "R"); myPrint("B", txt)
-                    logToolboxUpdates("advanced_options_edit_parameter_keys", txt)
-
-                    play_the_money_sound()
-                    myPopupInformationBox(jif,
-                                          "SUCCESS: OBJECT %s DELETED" %(theObject),
-                                          "DELETE OBJECT",
-                                          JOptionPane.ERROR_MESSAGE)
-                    return
-
-                continue
-
-            # OK, so we are changing or deleting
-            if lChg or lDel:
-
-                paramKeys = sorted(theObject.getParameterKeys())                                                        # noqa
-                selectedKey = JOptionPane.showInputDialog(toolbox_frame_,
-                                                          "Select the %s Parameter you want to %s" % (theObject,text),
-                                                          "ADVANCED OPTIONS",
-                                                          JOptionPane.WARNING_MESSAGE,
-                                                          getMDIcon(None),
-                                                          paramKeys,
-                                                          None)
-                if not selectedKey: continue
-
-                value = theObject.getParameter(selectedKey, None)                                                       # noqa
-
-                output =  "%s PLEASE REVIEW PARAMETER & VALUE BEFORE MAKING CHANGES\n" %(theObject)
-                output += " -----------------------------------------------\n\n"
-
-                output += "\n@@ This '%s' key can be changed/deleted by this script @@\n" %(selectedKey)
-
-                output += "\n%s %s\n" %(pad("%s PARAMETER:"%(theObject), 25), selectedKey)
-                output += "\n%s %s\n" %(pad("Type:",25), type(value))
-                output += "\n%s %s\n" %(pad("Value:",25), value)
-
-                output += "\n<END>"
-                jif = QuickJFrame("REVIEW THE KEY BEFORE CHANGES to %s" %(theObject), output, lAutoSize=True, lWrapText=False, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
-
-                chgValue = None
-
-                if lChg:
-                    chgValue = myPopupAskForInput(jif,
-                                                  "CHANGE PARAMETER VALUE IN %s" %(theObject),
-                                                  "VALUE:",
-                                                  "Carefully enter the new value (STRINGS ONLY! CaSE MattERS):",
-                                                  value,
-                                                  False,
-                                                  JOptionPane.WARNING_MESSAGE)
-
-                    if not chgValue or len(chgValue.strip()) <1 or chgValue == value: continue
-                    chgValue = chgValue.strip()
-
-                    if not check_if_key_data_string_valid(chgValue):
-                        myPopupInformationBox(jif,"ERROR: value %s is NOT valid!" %chgValue,"CHANGE IN %s" %(theObject),JOptionPane.ERROR_MESSAGE)
-                        continue    # back to ADVANCED Options menu
-
-                confAction = ""
-                if lDel:
-                    if isinstance(value, basestring) and value.count('\n') > 10:
-                        confAction = "%s key: %s (old value to long to display)" %(text, selectedKey)
-                    else:
-                        confAction = "%s key: %s (with old value: %s)" %(text, selectedKey, value)
-                if lChg:
-                    confAction = "%s key: %s to new value: %s" %(text, selectedKey, chgValue)
-
-                if confirm_backup_confirm_disclaimer(jif, "%s VALUE IN %s" %(text, theObject), confAction):
-
-                    if lDel:
-                        theObject.setParameter(selectedKey,None)                                                        # noqa
-
-                    if lChg:
-                        theObject.setParameter(selectedKey,chgValue)                                                    # noqa
-
-                    if isinstance(theObject, SplitTxn):                                                                 # noqa
-                        theObject.getParentTxn().syncItem()                                                             # noqa
-                    else:
-                        theObject.syncItem()                                                                            # noqa
-
-                    MD_REF.savePreferences()            # Flush all in memory settings to config.dict file on disk
-                    play_the_money_sound()
-
-                    if lDel:
-                        if isinstance(value, basestring) and value.count('\n') > 10:
-                            txt = "Parameter: %s DELETED from %s (old value to long to display) @@" %(selectedKey, theObject)
-                            _msgTxt = "SUCCESS: Parameter: %s DELETED from %s (old value to long to display)" %(selectedKey, theObject)
-                        else:
-                            txt = "Parameter: %s DELETED from %s (old value: %s) @@" %(selectedKey, theObject, value)
-                            _msgTxt = "SUCCESS: Parameter: %s DELETED from %s (old value: %s)" %(selectedKey, theObject, value)
-                        myPrint("B", txt)
-                        logToolboxUpdates("advanced_options_edit_parameter_keys", txt)
-
-                        myPopupInformationBox(jif, _msgTxt, "DELETE IN %s" %(theObject), JOptionPane.WARNING_MESSAGE)
-
-                    if lChg:
-                        txt = "Parameter: %s CHANGED to %s in %s @@" %(selectedKey, chgValue, theObject)
-                        myPrint("B", txt)
-                        logToolboxUpdates("advanced_options_edit_parameter_keys", txt)
-                        myPopupInformationBox(jif,
-                                              "SUCCESS: Parameter: %s CHANGED to %s in %s" %(selectedKey, chgValue, theObject),
-                                              "CHANGE IN %s" %(theObject),
-                                              JOptionPane.WARNING_MESSAGE)
-                    jif.dispose()       # already within the EDT
-                    continue
-
-                jif.dispose()       # already within the EDT
-                continue
-
     def remove_int_external_files_settings():
         if MD_REF.getCurrentAccountBook() is None: return
 
@@ -26733,7 +26432,7 @@ Moneydance(MD) is built on Java. Hence the application runs on a Java Virtual Ma
 - NOTE: You can also execute the moneydance.jar using Java as long as you set up your environment properly.
         .. this is out of scope of this document, but refer to: https://yogi1967.github.io/MoneydancePythonScripts/
         .. and the example launch scripts contained on my site.
-        .. MD2022.1(4058) Java 17, MD2022.3(4077) Java 18.0.1, MD2023.2(5008) Java 20.0.1, MD2023.2(5047) Java 21
+        .. MD2022.1(4058) Java 17, MD2022.3(4077) Java 18, MD2023.2(5008) Java 20, MD2023.2(5047) Java 21
 
 - Windows and Linux: The launch package is built using install4j. The JVM can be modified by editing the vmoptions file.
                      See separate Toolbox > Advanced Options menu > 'View Java VM Options File' for details
@@ -27550,7 +27249,9 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                 if obj is None: obj = MD_REF.getCurrentAccountBook().getTransactionSet().getTxnByID(uuid.lower()) # noqa
                 if obj is None: obj = TxnUtil.getTxnByID(MD_REF.getCurrentAccountBook().getTransactionSet(), uuid)
 
-                if obj is None: return
+                if obj is None:
+                    myPopupInformationBox(self.theFrame, "uuid: '%s' not found?!" %(uuid), "DISPLAY OBJECT FOR UUID", JOptionPane.WARNING_MESSAGE)
+                    return
 
                 if isinstance(obj, AbstractTxn):
                     MD_REF.getUI().showTxnXML(obj, self.theFrame)
@@ -28215,14 +27916,29 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                     user_add_alternative_bank_number = MenuJRadioButton("FIX: Add alternative account numbers for 'Accounts and bank/account number' report (above)", False, updateMenu=True)
                     user_add_alternative_bank_number.setToolTipText("Enter alternative account number(s) to print in the 'Accounts and bank/account number' report above. THIS CHANGES DATA!")
 
+                    user_view_networthCalculations = MenuJRadioButton("DIAG: View all the possible system generated NetWorth calculations...", False)
+                    user_view_networthCalculations.setToolTipText("This executes and shows all of the possible networth calculations (MD2024.3(5204) onwards)")
+
                     user_view_shouldBeIncludedInNetWorth_settings = MenuJRadioButton("DIAG: View Accounts' shouldBeIncludedInNetWorth() settings...", False)
                     user_view_shouldBeIncludedInNetWorth_settings.setToolTipText("This will list all Accounts/Categories and the shouldBeIncludedInNetWorth() setting - USE UPDATE MODE TO EDIT")
+
+                    user_view_inactiveAcctsIncludedNW = MenuJRadioButton("DIAG: Show all inactive accounts that are included in Net Worth calculations (MD2024.3 onwards)", False, secondaryEnabled=(isNetWorthUpgradedBuild()))
+                    user_view_inactiveAcctsIncludedNW.setToolTipText("Shows inactive accounts (and balances) that are included in Net Worth calculations (MD2024.3 onwards) - USE UPDATE MODE TO EDIT")
+
+                    user_validate_acct_start_dates = MenuJRadioButton("DIAG: Validate Account 'start dates'...", False)
+                    user_validate_acct_start_dates.setToolTipText("This will validate all Account 'start dates'  (based on earliest txn date) - USE UPDATE MODE TO FIX")
 
                     user_reportAccountNumbers = MenuJRadioButton("DIAG: Produce report of Accounts and bank/account number information (Useful for legacy / Will making)", False)
                     user_reportAccountNumbers.setToolTipText("This produces a report of bank accounts along with account & sort numbers etc... ")
 
-                    user_edit_shouldBeIncludedInNetWorth_settings = MenuJRadioButton("FIX: Edit an Account's shouldBeIncludedInNetWorth() setting", False, updateMenu=True)
-                    user_edit_shouldBeIncludedInNetWorth_settings.setToolTipText("This will allow you to edit an Account's shouldBeIncludedInNetWorth() setting. THIS CHANGES DATA!")
+                    user_edit_shouldBeIncludedInNetWorth_settings = MenuJRadioButton("FIX: Edit an Account's shouldBeIncludedInNetWorth() setting", False, updateMenu=True, secondaryEnabled=(not isNetWorthUpgradedBuild()))
+                    user_edit_shouldBeIncludedInNetWorth_settings.setToolTipText("This will allow you to edit an Account's shouldBeIncludedInNetWorth() setting. THIS CHANGES DATA! (only for builds up to MD2024.2)")
+
+                    user_fix_inactiveAcctsIncludedNW = MenuJRadioButton("FIX: Exclude all inactive accounts from Net Worth calculations (MD2024.3 onwards)", False, updateMenu=True, secondaryEnabled=(isNetWorthUpgradedBuild()))
+                    user_fix_inactiveAcctsIncludedNW.setToolTipText("Excludes all inactive accounts from Net Worth calculations (MD2024.3 onwards) - UNDO will be enabled - THIS CHANGES DATA!")
+
+                    user_fix_acct_start_dates = MenuJRadioButton("FIX: Fix Account 'start dates'...", False, updateMenu=True)
+                    user_fix_acct_start_dates.setToolTipText("This will fix all Account 'start dates' (based on earliest txn date). THIS CHANGES DATA!")
 
                     user_fix_accounts_parent = MenuJRadioButton("FIX: Account's Invalid Parent Account (fix_account_parent.py)", False, updateMenu=True)
                     user_fix_accounts_parent.setToolTipText("This will diagnose your Parent Accounts and fix if invalid. THIS CHANGES DATA! (fix_account_parent.py)")
@@ -28239,16 +27955,21 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                     userFilters = JPanel(GridLayout(0, 1))
 
                     rowHeight = 24
-                    rows = 5
+                    rows = 7
 
                     userFilters.add(ToolboxMode.DEFAULT_MENU_READONLY_TXT_LBL)
                     userFilters.add(user_view_check_number_settings)
                     userFilters.add(user_view_zero_bal_cats)
+                    if isNetWorthUpgradedBuild():
+                        userFilters.add(user_view_networthCalculations)
+                        rows += 1
                     userFilters.add(user_view_shouldBeIncludedInNetWorth_settings)
+                    userFilters.add(user_view_inactiveAcctsIncludedNW)
+                    userFilters.add(user_validate_acct_start_dates)
                     userFilters.add(user_reportAccountNumbers)
 
                     if GlobalVars.globalShowDisabledMenuItems or ToolboxMode.isUpdateMode():
-                        rows += 11
+                        rows += 13
                         userFilters.add(JLabel(" "))
                         userFilters.add(ToolboxMode.DEFAULT_MENU_UPDATE_TXT_LBL)
 
@@ -28259,6 +27980,8 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                         userFilters.add(user_add_alternative_bank_number)
                         userFilters.add(user_inactivate_zero_bal_cats)
                         userFilters.add(user_edit_shouldBeIncludedInNetWorth_settings)
+                        userFilters.add(user_fix_inactiveAcctsIncludedNW)
+                        userFilters.add(user_fix_acct_start_dates)
                         userFilters.add(user_force_change_an_accounts_type)
                         userFilters.add(user_force_change_accounts_currency)
                         userFilters.add(user_force_change_all_accounts_cats_currency)
@@ -28300,8 +28023,13 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                         if user_inactivate_zero_bal_cats.isSelected():                          zero_bal_categories(True)
                         if user_add_alternative_bank_number.isSelected():                       reportAccountNumbers(lEditAlternativeAccountNumbers=True)
                         if user_reportAccountNumbers.isSelected():                              reportAccountNumbers()
+                        if user_view_networthCalculations.isSelected():                         view_networthCalculations()
                         if user_view_shouldBeIncludedInNetWorth_settings.isSelected():          view_shouldBeIncludedInNetWorth_settings()
                         if user_edit_shouldBeIncludedInNetWorth_settings.isSelected():          edit_shouldBeIncludedInNetWorth_settings()
+                        if user_view_inactiveAcctsIncludedNW.isSelected():                      view_inactiveAcctsIncludedNW()
+                        if user_fix_inactiveAcctsIncludedNW.isSelected():                       fix_inactiveAcctsIncludedNW(lFix=True)
+                        if user_validate_acct_start_dates.isSelected():                         validate_account_start_dates()
+                        if user_fix_acct_start_dates.isSelected():                              fix_account_start_dates()
                         if user_force_change_an_accounts_type.isSelected():                     force_change_account_type()
                         if user_force_change_accounts_currency.isSelected():                    force_change_account_cat_currency()
                         if user_force_change_all_accounts_cats_currency.isSelected():           force_change_all_accounts_categories_currencies()
@@ -28372,6 +28100,12 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                     user_quick_check_prices_all = MenuJRadioButton("DIAG: Produce a quick report on all Currency rates / Security prices / dates", False)
                     user_quick_check_prices_all.setToolTipText("Performs a quick check on all current/latest prices/date and outputs all currencies/securities....")
 
+                    user_diag_splits_no_price = MenuJRadioButton("DIAG: Validate dated price record exists on security split date(s)", False)
+                    user_diag_splits_no_price.setToolTipText("Performs a quick check that all securities with stock splits have a price dated on the split date....")
+
+                    user_diag_splits_no_price_all = MenuJRadioButton("DIAG: List all security split data (also performs validation)", False)
+                    user_diag_splits_no_price_all.setToolTipText("Lists all security's split data - along with validation of the before/after prices...")
+
                     user_edit_security_decimal_places = MenuJRadioButton("FIX: Edit a Security's (hidden) Decimal Place setting (adjusts related Investment txns & Security balances accordingly) (2021.2(3089) onwards)", False, updateMenu=True, secondaryEnabled=(isRRateCurrencyIssueFixedBuild()))
                     user_edit_security_decimal_places.setToolTipText("This allows you to edit the hidden decimal places setting stored against a security (that you determined when you set the security up)")
 
@@ -28417,7 +28151,7 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                     userFilters = JPanel(GridLayout(0, 1))
 
                     rowHeight = 24
-                    rows = 11
+                    rows = 13
 
                     userFilters.add(ToolboxMode.DEFAULT_MENU_READONLY_TXT_LBL)
                     userFilters.add(user_validateBaseCurr)
@@ -28429,6 +28163,8 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                     userFilters.add(user_diagnose_matched_lot_data)
                     userFilters.add(user_quick_check_prices)
                     userFilters.add(user_quick_check_prices_all)
+                    userFilters.add(user_diag_splits_no_price)
+                    userFilters.add(user_diag_splits_no_price_all)
                     userFilters.add(user_diag_price_date)
 
                     if GlobalVars.globalShowDisabledMenuItems or ToolboxMode.isUpdateMode():
@@ -28543,6 +28279,8 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                         if user_diag_price_date.isSelected():                                           list_security_currency_price_date()
                         if user_quick_check_prices.isSelected():                                        quick_security_currency_price_check_report(lQuickCheckOnly=False)
                         if user_quick_check_prices_all.isSelected():                                    quick_security_currency_price_check_report(lQuickCheckOnly=False, lReportAll=True)
+                        if user_diag_splits_no_price.isSelected():                                      diag_security_splits_no_price()
+                        if user_diag_splits_no_price_all.isSelected():                                  diag_security_splits_no_price(lAll=True)
                         if user_autofix_price_date.isSelected():                                        list_security_currency_price_date(autofix=True)
                         if user_validateBaseCurr.isSelected():                                          validateAndFixBaseCurrency(validationOnly=True, popupAlert=True, modalPopup=True, adviseNoErrors=True)
                         if user_fixBaseCurr.isSelected():                                               validateAndFixBaseCurrency(validationOnly=False, popupAlert=True, modalPopup=True, adviseNoErrors=True)
@@ -28765,6 +28503,12 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                     user_reset_window_display_settings = MenuJRadioButton("RESET Window Display Settings (disabled when script)", False, updateMenu=True, secondaryEnabled=(GlobalVars.i_am_an_extension_so_run_headless))
                     user_reset_window_display_settings.setToolTipText("This tells MD to 'forget' window display settings. CLOSE ALL REGISTER WINDOWS FIRST! The beauty is it keeps all other settings intact! THIS CHANGES DATA!")
 
+                    user_reset_all_inbuilt_report_params_defaults = MenuJRadioButton("RESET all inbuilt report/graph parameters to defaults", False, updateMenu=True)
+                    user_reset_all_inbuilt_report_params_defaults.setToolTipText("Erases any settings saved against inbuilt reports/graphs (does not touch Memorized Reports/Graphs). THIS CHANGES DATA!")
+
+                    user_delete_all_memorized_reports = MenuJRadioButton("DELETE all memorized reports/graphs", False, updateMenu=True)
+                    user_delete_all_memorized_reports.setToolTipText("DELETE all memorized reports/graphs (does not touch inbuilt report/graph parameters). THIS CHANGES DATA!")
+
                     userFilters = JPanel(GridLayout(0, 1))
 
                     rowHeight = 24
@@ -28781,7 +28525,7 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                     userFilters.add(user_convert_timestamp)
 
                     if GlobalVars.globalShowDisabledMenuItems or ToolboxMode.isUpdateMode():
-                        rows += 14
+                        rows += 16
                         userFilters.add(JLabel(" "))
                         userFilters.add(ToolboxMode.DEFAULT_MENU_UPDATE_TXT_LBL)
 
@@ -28801,6 +28545,8 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
                         userFilters.add(user_change_moneydance_fonts)
                         userFilters.add(user_delete_custom_theme_file)
                         userFilters.add(user_delete_orphan_extensions)
+                        userFilters.add(user_reset_all_inbuilt_report_params_defaults)
+                        userFilters.add(user_delete_all_memorized_reports)
 
                     bg = setupMenuRadioButtons(userFilters)
 
@@ -28827,27 +28573,29 @@ MD2021.2(3088): Adds capability to set the encryption passphrase into an environ
 
                         selectHomeScreen()      # Stops the LOT Control box popping up..... Get back to home screen....
 
-                        if user_display_passwords.isSelected():                     display_passwords()
-                        if user_view_searchable_console_log.isSelected():           ViewFileButtonAction(MD_REF.getLogFile(), "MD Console Log").actionPerformed(None)
-                        if user_view_MD_config_file.isSelected():                   ViewFileButtonAction(Common.getPreferencesFile(), "MD Config").actionPerformed(None)
-                        if user_view_MD_custom_theme_file.isSelected():             ViewFileButtonAction(ThemeInfo.customThemeFile, "MD Custom Theme").actionPerformed(None)
-                        if user_view_extensions_details.isSelected():               view_extensions_details()
-                        if user_view_memorised_reports.isSelected():                get_list_memorised_reports()
-                        # if user_find_sync_password_in_ios_backups.isSelected():     find_IOS_sync_data()
-                        if user_import_QIF.isSelected():                            import_QIF()
-                        if user_convert_timestamp.isSelected():                     convert_timestamp_readable_date()
-                        if user_disable_moneyforesight.isSelected():                disable_moneyforesight()
-                        if user_close_dataset.isSelected():                         close_dataset()
-                        if user_rename_dataset.isSelected():                        rename_relocate_dataset(lRelocateDataset=False)
-                        if user_relocate_dataset_internal.isSelected():             rename_relocate_dataset(lRelocateDataset=True, lRelocateToInternal=True)
-                        if user_relocate_dataset_external.isSelected():             rename_relocate_dataset(lRelocateDataset=True, lRelocateToInternal=False)
-                        if user_cleanup_external_files.isSelected():                cleanup_external_files_setting()
-                        if user_advanced_delete_int_ext_files.isSelected():         remove_int_external_files_settings()
-                        if user_remove_inactive_from_sidebar.isSelected():          remove_inactive_from_sidebar()
-                        if user_change_moneydance_fonts.isSelected():               change_fonts()
-                        if user_delete_custom_theme_file.isSelected():              delete_theme_file()
-                        if user_delete_orphan_extensions.isSelected():              force_remove_extension()
-                        if user_reset_window_display_settings.isSelected():         reset_window_positions()
+                        if user_display_passwords.isSelected():                         display_passwords()
+                        if user_view_searchable_console_log.isSelected():               ViewFileButtonAction(MD_REF.getLogFile(), "MD Console Log").actionPerformed(None)
+                        if user_view_MD_config_file.isSelected():                       ViewFileButtonAction(Common.getPreferencesFile(), "MD Config").actionPerformed(None)
+                        if user_view_MD_custom_theme_file.isSelected():                 ViewFileButtonAction(ThemeInfo.customThemeFile, "MD Custom Theme").actionPerformed(None)
+                        if user_view_extensions_details.isSelected():                   view_extensions_details()
+                        if user_view_memorised_reports.isSelected():                    get_list_memorised_reports()
+                        # if user_find_sync_password_in_ios_backups.isSelected():         find_IOS_sync_data()
+                        if user_import_QIF.isSelected():                                import_QIF()
+                        if user_convert_timestamp.isSelected():                         convert_timestamp_readable_date()
+                        if user_disable_moneyforesight.isSelected():                    disable_moneyforesight()
+                        if user_close_dataset.isSelected():                             close_dataset()
+                        if user_rename_dataset.isSelected():                            rename_relocate_dataset(lRelocateDataset=False)
+                        if user_relocate_dataset_internal.isSelected():                 rename_relocate_dataset(lRelocateDataset=True, lRelocateToInternal=True)
+                        if user_relocate_dataset_external.isSelected():                 rename_relocate_dataset(lRelocateDataset=True, lRelocateToInternal=False)
+                        if user_cleanup_external_files.isSelected():                    cleanup_external_files_setting()
+                        if user_advanced_delete_int_ext_files.isSelected():             remove_int_external_files_settings()
+                        if user_remove_inactive_from_sidebar.isSelected():              remove_inactive_from_sidebar()
+                        if user_change_moneydance_fonts.isSelected():                   change_fonts()
+                        if user_delete_custom_theme_file.isSelected():                  delete_theme_file()
+                        if user_delete_orphan_extensions.isSelected():                  force_remove_extension()
+                        if user_reset_window_display_settings.isSelected():             reset_window_positions()
+                        if user_reset_all_inbuilt_report_params_defaults.isSelected():  reset_all_inbuilt_report_params_defaults()
+                        if user_delete_all_memorized_reports.isSelected():              delete_all_memorized_reports()
 
                         for button in bg.getElements():
                             if button.isSelected(): return      # Quit the menu system after running something....

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-# extract_data.py - build: 1044 - July 2024 - Stuart Beesley
+# extract_data.py - build: 1047 - June 2025 - Stuart Beesley
 #                   You can auto invoke by launching MD with one of the following:
 #                           '-d [datasetpath] -invoke=moneydance:fmodule:extract_data:autoextract:noquit'
 #                           '-d [datasetpath] -invoke=moneydance:fmodule:extract_data:autoextract:quit'
@@ -32,7 +32,7 @@
 
 # MIT License
 #
-# Copyright (c) 2020-2024 Stuart Beesley - StuWareSoftSystems
+# Copyright (c) 2020-2025 Stuart Beesley - StuWareSoftSystems
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -68,62 +68,6 @@
 # Use in Moneydance Menu Window->Show Developer Console >> Open Script >> RUN
 
 # Stuart Beesley Created 2021-02-10 tested on MacOS - MD2021 onwards - StuWareSoftSystems....
-# Build: 1000 - Initial consolidation of all prior extract scripts
-# Build: 1001 - Enhancement to extract_investment_transactions_csv so that accounts with no txns still output the opening balance...
-# Build: 1001 - Enhancement to extract_account_registers_csv so that accounts with no txns still output the opening balance...
-# Build: 1001 - On both the above, limit the opening balances when created within the date range....
-# Build: 1001 - Append date_time to filename - user request....
-# Build: 1001 - Enhance stockglance2020 to get cash balances for all accounts when the conditions are correct...
-# Build: 1002 - Detect when already running and prevent situation
-# Build: 1002 - Fix SG2020 display on account names with non-ascii characters; error trap all extract csv routines
-# Build: 1003 - Tweak, block old MD versions
-# Build: 1004 - tweak to common code for launch detection
-# Build: 1005 - tweak to common code (minor non-functional change)
-# Build: 1006 - Switch to SwingUtilities.invokeLater() rather than Thread(); other small internal tweaks; ; fix toolbar location on older versions
-# build: 1006 - Build 3051 of Moneydance... fix references to moneydance_* variables;
-# build: 1007 - Build 3056 'deal' with the Python loader changes..
-# build: 1008 - Build 3056 Utilise .unload() method...
-# build: 1009 - Common code tweaks
-# build: 1010 - Incorporated new category filter in Extract Account Registers - mods by IK user @mark - thanks!
-# build: 1011 - Conforming to IK design requirements... Minor tweaks...
-# build: 1012 - Fixed pickle.dump/load common code to work properly cross-platform (e.g. Windows to Mac) by (stripping \r when needed)
-# build: 1013 - StockGlance2020 Disabled rounding to Security.getDecimalPlaces() as this is the share balance, not price rounding..!
-# build: 1013 - StockGlance2020 Enhanced rounding options with user parameters for mac decimal places rounding, and use current price (or latest price history price)
-# build: 1013 - Common code tweaks
-# build: 1014 - Trap ZeroDivisionError: when cost basis is zero. Also trap all errors with a user popup
-# build: 1014 - New print options for StockGlance2020 and Extract_Data
-# build: 1015 - Common code tweaks; fixed colors for Dark themes and to be more MD 'compatible'
-# build: 1016 - Common code tweaks; Flat Dark Theme
-# build: 1017 - SG2020: Fix print to PDF to make 2 parts to avoid overwriting the same pdf file....
-# build: 1018 - Common code tweaks
-# build: 1019 - Common code tweaks; catch error in myPrint() on Asian double-byte characters; Other Asian Double-Byte fixes (more str() issues!!)
-# build: 1019 - Fix JMenu()s - remove <html> tags (affects colors on older Macs); newer MyJFrame().dispose()
-# build: 1020 - Tweak extract reminders - Monkey Patched the display / sort / extract date format....
-# build: 1021 - Added <PREVIEW> tag to JFrame titlebar if detected...
-# build: 1021 - Added <html> tags to JMenu() titles to stop becoming invisible when mouse hovers
-# build: 1022 - Changed JDateField to use user's date format
-# build: 1022 - Eliminated common code globals :->
-# build: 1022 - Extract Account Registers. Include LOAN and LIABILITY accounts too..
-# build: 1023 - Added GlobalVars.saved_lWriteParametersToExportFile_SWSS by user request (GitHub: Michael Thompson)
-# build: 1023 - Bug fix for .getSubAccounts() - as of build 4069 this is an unmodifiable list; also trap SwingWorker errors
-# build: 1023 - Added GlobalVars.saved_lOmitLOTDataFromExtract_EIT to Extract Investment Txns to allow user to omit LOT matching data from extract
-# build: 1023 - Added GlobalVars.saved_lAllowEscapeExitApp_SWSS to allow/block escape key exiting main app's window;  Tweaked the JMenuBar() to say "MENU"
-# build: 1023 - Upgraded the Edit Reminders popup so that escape will cancel the popup dialog window.
-# build: 1023 - Added showRawItemDetails() to reminders popup right-click menu
-# build: 1024 - Fixed call to .setEscapeKeyCancels() on older versions of MD
-# build: 1025 - Tweak; Common code
-# build: 1025 - FileDialog() (refer: java.desktop/sun/lwawt/macosx/CFileDialog.java) seems to no longer use "com.apple.macos.use-file-dialog-packages" in favor of "apple.awt.use-file-dialog-packages" since Monterrey...
-# build: 1025 - Common code update - remove Decimal Grouping Character - not necessary to collect and crashes on newer Java versions (> byte)
-# build: 1025 - Add date range selector/filter to extract_investment_registers
-# build: 1025 - Fix SG2020 cost_basis conversion back to base on certain non-base security situations (it wrongly assumed the cost basis was always base)
-# build: 1026 - Tweak common code
-# build: 1027 - Tweak init message with time
-# build: 1028 - Added fields to extract investment transactions extract... SecurityID and [optional] security account information (e.g. type, apr, subtype etc)
-# build: 1029 - Added new extract_security_balances for Dainius Krusinskas: dainiusforex@gmail.com / dainius.krusinskas@outlook.com (dainiusforex)
-# build: 1029 - DAMN! I hit the method/file too large (to compile) problem.. Still not proud of the duplications and use of globals. Anyway, rejigged the script to put more sections in methods...
-# build: 1030 - Added bootstrap to execute compiled version of extension (faster to load)....
-# build: 1031 - MD2023 (Kotlin compiled version) fixes - especially for (now unadjusted) Start Balance(s) and new Balance Adjustment(s)....
-#               Fix common code for MD2023...
 # build: 1032 - Common code tweaks; Changed Cleared status for Reconciling from 'x' to 'r' via .getStatusCharRevised(txn)
 # build: 1033 - MAJOR UPDATE. NEW Auto Extract Mode (and Extensions Menu option). Allows Multi-extracts in one go; All extracts now via SwingWorker...
 # build: 1034 - Added extract future reminders option...; Added extract Trunk; Added extract attachments...
@@ -150,6 +94,14 @@
 # build: 1042 - Update MyCostCalculation to v8; MyJFrame(v5)
 #               Add extra price/hidden price date info to Extract Security Balances (ESB)... Also fix ESB Security Master prices for date
 # build: 1044 - MD2024.2(5142) - moneydance_extension_loader was nuked and moneydance_this_fm with getResourceAsStream() was provided.
+# build: 1045 - Fix for invalid / old dates (i.e. < 19000101) in EIT and EAR extracts...
+# build: 1045 - Added tags to extract reminders...; retain sort between reminder refresh(s)
+# build: 1045 - Tweaked EAR extract... copy check to parent if empty, added isParentTxn
+# build: 1046 - Added extract category information (ECI) extract
+# build: 1047 - ???
+# build: 1047 - BUGFIX - Extract Reminders when notes... Missing tags column (index 18)...
+# build: 1047 - Patch ESB - invalid Account::getMaturity() date (in this case a value of 28800000!?
+# build: 1047 - ???
 
 # todo - EAR: Switch to 'proper' usage of DateRangeChooser() (rather than my own 'copy')
 
@@ -164,7 +116,7 @@
 
 # SET THESE LINES
 myModuleID = u"extract_data"
-version_build = "1044"
+version_build = "1047"
 MIN_BUILD_REQD = 1904                                               # Check for builds less than 1904 / version < 2019.4
 _I_CAN_RUN_AS_DEVELOPER_CONSOLE_SCRIPT = True
 
@@ -503,7 +455,6 @@ else:
     from copy import deepcopy
     import subprocess
     from com.infinitekind.util import IOUtils as MDIOUtils
-    from com.moneydance.apps.md.controller import Util
     from com.moneydance.apps.md.view.gui import DateRangeChooser
     from com.infinitekind.moneydance.model import SecurityType, AbstractTxn                                             # noqa
 
@@ -661,6 +612,7 @@ else:
     GlobalVars.saved_autoExtract_EAR = False
     GlobalVars.saved_autoExtract_EIT = False
     GlobalVars.saved_autoExtract_ECH = False
+    GlobalVars.saved_autoExtract_ECI = False
     GlobalVars.saved_autoExtract_ESB = False
     GlobalVars.saved_autoExtract_EAB = False
     GlobalVars.saved_autoExtract_ETRUNK = False
@@ -2988,7 +2940,7 @@ Visit: %s (Author's site)
             _label1.setForeground(getColorBlue())
             aboutPanel.add(_label1)
 
-            _label2 = JLabel(pad("StuWareSoftSystems (2020-2024)", 800))
+            _label2 = JLabel(pad("StuWareSoftSystems (2020-2025)", 800))
             _label2.setForeground(getColorBlue())
             aboutPanel.add(_label2)
 
@@ -4586,6 +4538,7 @@ Visit: %s (Author's site)
         user_security_balances = JRadioButton("Security Balances - extract to csv", False)
         user_account_balances = JRadioButton("Account Balances - extract to csv", False)
         user_price_history = JRadioButton("Currency price history - extract to csv (simple or detailed formats)", False)
+        user_category_info = JRadioButton("Category information - extract to csv", False)
         user_extract_trunk = JRadioButton("Decrypt & extract raw Trunk file", False)
         user_extract_json = JRadioButton("Extract raw data as JSON file", False)
         user_extract_attachments = JRadioButton("Attachments - extract to disk", False)
@@ -4618,6 +4571,7 @@ Visit: %s (Author's site)
         bg.add(user_security_balances)
         bg.add(user_account_balances)
         bg.add(user_price_history)
+        bg.add(user_category_info)
         bg.add(user_extract_trunk)
         bg.add(user_extract_json)
         bg.add(user_extract_attachments)
@@ -4632,6 +4586,7 @@ Visit: %s (Author's site)
             elif defaultSelection == "_ESB": user_security_balances.setSelected(True)
             elif defaultSelection == "_EAB": user_account_balances.setSelected(True)
             elif defaultSelection == "_ECH": user_price_history.setSelected(True)
+            elif defaultSelection == "_ECI": user_category_info.setSelected(True)
             elif defaultSelection == "_ETRUNK": user_extract_trunk.setSelected(True)
             elif defaultSelection == "_JSON": user_extract_json.setSelected(True)
             elif defaultSelection == "_EATTACH": user_extract_attachments.setSelected(True)
@@ -4644,6 +4599,7 @@ Visit: %s (Author's site)
         _userFilters.add(user_security_balances)
         _userFilters.add(user_account_balances)
         _userFilters.add(user_price_history)
+        _userFilters.add(user_category_info)
         _userFilters.add(user_extract_trunk)
         _userFilters.add(user_extract_json)
         _userFilters.add(user_extract_attachments)
@@ -4658,7 +4614,7 @@ Visit: %s (Author's site)
         _userFilters.add(JLabel("---------"))
         _userFilters.add(statusLabel)
 
-        _lExtractStockGlance2020 = _lExtractReminders = _lExtractAccountTxns = _lExtractInvestmentTxns = _lExtractSecurityBalances = _lExtractAccountBalances = _lExtractCurrencyHistory = _lExtractTrunk = _lExtractJSON = _lExtractAttachments = False
+        _lExtractStockGlance2020 = _lExtractReminders = _lExtractAccountTxns = _lExtractInvestmentTxns = _lExtractSecurityBalances = _lExtractAccountBalances = _lExtractCurrencyHistory = _lExtractCategoryInfo = _lExtractTrunk = _lExtractJSON = _lExtractAttachments = False
 
         class WarningMessage(AbstractAction):
             def __init__(self, _dialog, _user_autoExtractWhenFileClosing):
@@ -4693,7 +4649,7 @@ Visit: %s (Author's site)
                 statusLabel.setForeground(getColorRed())
                 statusLabel.setText("<<WARNING: Extract folder path INVALID - Please select folder...>>")
             rowHeight = 24
-            rows = 23
+            rows = 25
             jsp = MyJScrollPaneForJOptionPane(_userFilters, None, 750, rows * rowHeight)
             pane = JOptionPane()
             pane.setIcon(getMDIcon(lAlwaysGetIcon=True))
@@ -4761,6 +4717,11 @@ Visit: %s (Author's site)
                 _lExtractCurrencyHistory = True
                 break
 
+            if user_category_info.isSelected():
+                myPrint("B", "Category Information extract option has been chosen")
+                _lExtractCategoryInfo = True
+                break
+
             if user_extract_trunk.isSelected():
                 myPrint("B", "Decrypt & extract raw Trunk file option has been chosen")
                 _lExtractTrunk  = True
@@ -4810,12 +4771,13 @@ Visit: %s (Author's site)
         elif user_security_balances.isSelected():   newDefault = "_ESB"
         elif user_account_balances.isSelected():    newDefault = "_EAB"
         elif user_price_history.isSelected():       newDefault = "_ECH"
+        elif user_category_info.isSelected():       newDefault = "_ECI"
         elif user_extract_trunk.isSelected():       newDefault = "_ETRUNK"
         elif user_extract_json.isSelected():        newDefault = "_JSON"
         elif user_extract_attachments.isSelected(): newDefault = "_EATTACH"
         else:                                       newDefault = None
 
-        return _exit, newDefault, _lExtractStockGlance2020, _lExtractReminders, _lExtractAccountTxns, _lExtractInvestmentTxns, _lExtractSecurityBalances, _lExtractAccountBalances, _lExtractCurrencyHistory, _lExtractTrunk, _lExtractJSON, _lExtractAttachments
+        return _exit, newDefault, _lExtractStockGlance2020, _lExtractReminders, _lExtractAccountTxns, _lExtractInvestmentTxns, _lExtractSecurityBalances, _lExtractAccountBalances, _lExtractCurrencyHistory, _lExtractCategoryInfo, _lExtractTrunk, _lExtractJSON, _lExtractAttachments
 
     def validateCSVFileDelimiter(requestedDelimiter=None):
         decimalStrings = [".", ","]
@@ -6263,6 +6225,89 @@ Visit: %s (Author's site)
 
         return _exit
 
+    def listExtractCategoryInfoParameters():
+        myPrint("B","---------------------------------------------------------------------------------------")
+        myPrint("B","Parameters: Extract Category Info:")
+        myPrint("B", "  Auto Extract.........................:", GlobalVars.saved_autoExtract_ECI)
+        myPrint("B","---------------------------------------------------------------------------------------")
+
+    def setupExtractCategoryInfoParameters():
+        # ####################################################
+        # EXTRACT_CATEGORY_INFO_CSV PARAMETER SCREEN
+        # ####################################################
+
+        global debug
+
+        label2 = JLabel("Strip non ASCII characters from CSV extract?")
+        user_selectStripASCII = JCheckBox("", GlobalVars.saved_lStripASCII_SWSS)
+
+        label3 = JLabel("Change CSV extract Delimiter from default:")
+        user_selectDELIMITER = JComboBox(GlobalVars.ALLOWED_CSV_FILE_DELIMITER_STRINGS)
+        user_selectDELIMITER.setSelectedItem(GlobalVars.saved_csvDelimiter_SWSS)
+
+        labelBOM = JLabel("Write BOM (Byte Order Mark) to file (helps Excel open files)?")
+        user_selectBOM = JCheckBox("", GlobalVars.saved_lWriteBOMToExportFile_SWSS)
+
+        labelExportParameters = JLabel("Write parameters out to file (added as rows at EOF)?")
+        user_ExportParameters = JCheckBox("", GlobalVars.saved_lWriteParametersToExportFile_SWSS)
+
+        labelAutoExtract = JLabel("Enable Auto Extract?")
+        user_AutoExtract = JCheckBox("", GlobalVars.saved_autoExtract_ECI)
+
+        label4 = JLabel("Turn DEBUG Verbose messages on?")
+        user_selectDEBUG = JCheckBox("", debug)
+
+        userFilters = JPanel(GridLayout(0, 2))
+        userFilters.add(label2)
+        userFilters.add(user_selectStripASCII)
+        userFilters.add(label3)
+        userFilters.add(user_selectDELIMITER)
+        userFilters.add(labelBOM)
+        userFilters.add(user_selectBOM)
+        userFilters.add(labelExportParameters)
+        userFilters.add(user_ExportParameters)
+        userFilters.add(labelAutoExtract)
+        userFilters.add(user_AutoExtract)
+        userFilters.add(label4)
+        userFilters.add(user_selectDEBUG)
+
+        _exit = False
+        options = ["Abort", "CSV Extract"]
+
+        while True:
+            rowHeight = 24
+            rows = 7
+            jsp = MyJScrollPaneForJOptionPane(userFilters, None, 900, rows * rowHeight)
+            userAction = (JOptionPane.showOptionDialog(extract_data_frame_, jsp, "EXTRACT CATEGORY INFO: Set Script Parameters....",
+                                                       JOptionPane.OK_CANCEL_OPTION,
+                                                       JOptionPane.QUESTION_MESSAGE,
+                                                       getMDIcon(lAlwaysGetIcon=True),
+                                                       options, options[1]))
+            if userAction != 1:
+                myPrint("B", "User Cancelled Parameter selection.. Will abort..")
+                _exit = True
+                GlobalVars.DISPLAY_DATA = False
+                GlobalVars.EXTRACT_DATA = False
+                break
+
+            # no validation on this extract
+            break
+
+        if not _exit:
+            GlobalVars.DISPLAY_DATA = False
+            GlobalVars.EXTRACT_DATA = True
+            GlobalVars.saved_lStripASCII_SWSS = user_selectStripASCII.isSelected()
+            GlobalVars.saved_csvDelimiter_SWSS = validateCSVFileDelimiter(user_selectDELIMITER.getSelectedItem())
+            GlobalVars.saved_lWriteBOMToExportFile_SWSS = user_selectBOM.isSelected()
+            GlobalVars.saved_lWriteParametersToExportFile_SWSS = user_ExportParameters.isSelected()
+            GlobalVars.saved_autoExtract_ECI = user_AutoExtract.isSelected()
+
+            debug = user_selectDEBUG.isSelected()
+
+            listExtractCategoryInfoParameters()
+
+        return _exit
+
     def listExtractSecurityBalancesParameters():
         myPrint("B","---------------------------------------------------------------------------------------")
         myPrint("B","Parameters: Extract Security Balances:")
@@ -6930,6 +6975,8 @@ Visit: %s (Author's site)
             defaultFileName = "extract_account_balances"
         elif extractType == "ech":
             defaultFileName = "extract_currency_history"
+        elif extractType == "eci":
+            defaultFileName = "extract_category_info"
         elif extractType == "eab":
             defaultFileName = "extract_account_balances"
         elif extractType == "etrunk":
@@ -7026,6 +7073,7 @@ Visit: %s (Author's site)
                                              GlobalVars.saved_autoExtract_EAR,
                                              GlobalVars.saved_autoExtract_EIT,
                                              GlobalVars.saved_autoExtract_ECH,
+                                             GlobalVars.saved_autoExtract_ECI,
                                              GlobalVars.saved_autoExtract_ESB,
                                              GlobalVars.saved_autoExtract_EAB,
                                              GlobalVars.saved_autoExtract_ETRUNK,
@@ -7056,7 +7104,7 @@ Visit: %s (Author's site)
                                              lModal=False).go()
 
                     else:
-                        for exType in ["EAR", "EIT", "SG2020", "ERTC", "EFRTC", "ESB", "EAB", "ECH", "EAB", "ETRUNK", "JSON","EATTACH"]:
+                        for exType in ["EAR", "EIT", "SG2020", "ERTC", "EFRTC", "ESB", "EAB", "ECH", "ECI", "EAB", "ETRUNK", "JSON","EATTACH"]:
 
                             checkPath = getExtractFullPath(exType, lDoNotAddTimeStamp=True)
                             if check_file_writable(checkPath):
@@ -7089,6 +7137,7 @@ Visit: %s (Author's site)
                     lExtractSecurityBalances = GlobalVars.saved_autoExtract_ESB
                     lExtractAccountBalances = GlobalVars.saved_autoExtract_EAB
                     lExtractCurrencyHistory = GlobalVars.saved_autoExtract_ECH
+                    lExtractCategoryInfo = GlobalVars.saved_autoExtract_ECI
                     lExtractTrunk = GlobalVars.saved_autoExtract_ETRUNK
                     lExtractJSON = GlobalVars.saved_autoExtract_JSON
                     lExtractAttachments = GlobalVars.saved_autoExtract_EATTACH
@@ -7107,6 +7156,7 @@ Visit: %s (Author's site)
                                  "     Security Balances.......: %s\n"
                                  "     Account Balances........: %s\n"
                                  "     Currency History........: %s\n"
+                                 "     Category Info...........: %s\n"
                                  "     Decrypt & Extract Trunk.: %s\n"
                                  "     Extract raw data as JSON: %s\n"
                                  "     Attachments.............: %s%s\n"
@@ -7117,6 +7167,7 @@ Visit: %s (Author's site)
                               GlobalVars.saved_autoExtract_ESB,
                               GlobalVars.saved_autoExtract_EAB,
                               GlobalVars.saved_autoExtract_ECH,
+                              GlobalVars.saved_autoExtract_ECI,
                               GlobalVars.saved_autoExtract_ETRUNK,
                               GlobalVars.saved_autoExtract_JSON,
                               GlobalVars.saved_autoExtract_EATTACH, "" if not (didDisableALL_attachments) else " *** DISABLING extract of ALL ATTACHMENTS (when in auto extract on file closing mode) ***"))
@@ -7140,6 +7191,7 @@ Visit: %s (Author's site)
                     if lExtractAccountRegisters:    listExtractAccountRegistersParameters()
                     if lExtractInvestmentTxns:      listExtractInvestmentAccountParameters()
                     if lExtractCurrencyHistory:     listExtractCurrencyHistoryParameters()
+                    if lExtractCategoryInfo:        listExtractCategoryInfoParameters()
                     if lExtractSecurityBalances:    listExtractSecurityBalancesParameters()
                     if lExtractAccountBalances:     listExtractAccountBalancesParameters()
                     if lExtractTrunk:               listExtractTrunkParameters()
@@ -7149,14 +7201,14 @@ Visit: %s (Author's site)
                 elif GlobalVars.AUTO_DISPLAY_SG2020:
                     GlobalVars.DISPLAY_DATA = True
                     lExtractStockGlance2020 = True
-                    exitScript = lExtractReminders = lExtractAccountRegisters = lExtractInvestmentTxns = lExtractSecurityBalances = lExtractAccountBalances = lExtractCurrencyHistory = lExtractTrunk = lExtractJSON = lExtractAttachments = False
+                    exitScript = lExtractReminders = lExtractAccountRegisters = lExtractInvestmentTxns = lExtractSecurityBalances = lExtractAccountBalances = lExtractCurrencyHistory = lExtractCategoryInfo = lExtractTrunk = lExtractJSON = lExtractAttachments = False
 
                 elif GlobalVars.AUTO_DISPLAY_REMINDERS:
                     GlobalVars.DISPLAY_DATA = True
                     lExtractReminders = True
-                    exitScript = lExtractStockGlance2020 = lExtractAccountRegisters = lExtractInvestmentTxns = lExtractSecurityBalances = lExtractAccountBalances = lExtractCurrencyHistory = lExtractTrunk = lExtractJSON = lExtractAttachments = False
+                    exitScript = lExtractStockGlance2020 = lExtractAccountRegisters = lExtractInvestmentTxns = lExtractSecurityBalances = lExtractAccountBalances = lExtractCurrencyHistory = lExtractCategoryInfo = lExtractTrunk = lExtractJSON = lExtractAttachments = False
                 else:
-                    exitScript, GlobalVars.saved_whichDefaultExtractToRun_SWSS, lExtractStockGlance2020, lExtractReminders, lExtractAccountRegisters, lExtractInvestmentTxns, lExtractSecurityBalances, lExtractAccountBalances, lExtractCurrencyHistory, lExtractTrunk, lExtractJSON, lExtractAttachments \
+                    exitScript, GlobalVars.saved_whichDefaultExtractToRun_SWSS, lExtractStockGlance2020, lExtractReminders, lExtractAccountRegisters, lExtractInvestmentTxns, lExtractSecurityBalances, lExtractAccountBalances, lExtractCurrencyHistory, lExtractCategoryInfo, lExtractTrunk, lExtractJSON, lExtractAttachments \
                         = getExtractChoice(GlobalVars.saved_whichDefaultExtractToRun_SWSS)
 
                 if exitScript:
@@ -7183,6 +7235,9 @@ Visit: %s (Author's site)
 
                     elif lExtractCurrencyHistory:
                         exitScript = setupExtractCurrencyHistoryParameters()
+
+                    elif lExtractCategoryInfo:
+                        exitScript = setupExtractCategoryInfoParameters()
 
                     elif lExtractStockGlance2020:
                         exitScript = setupExtractSG2020Parameters()
@@ -8952,6 +9007,7 @@ Visit: %s (Author's site)
 
                                 GlobalVars.csvfilename = getExtractFullPath("ERTC")
                                 GlobalVars.csvfilename_EFRTC = getExtractFullPath("EFRTC")
+                                GlobalVars.saveRemindersSortKeys = None
 
                                 def do_extract_reminders():
                                     def terminate_script():
@@ -8998,6 +9054,7 @@ Visit: %s (Author's site)
                                                 pageSetup()
 
                                             if event.getActionCommand().lower().startswith("refresh"):
+                                                GlobalVars.saveRemindersSortKeys = None
                                                 RefreshMenuAction().refresh()
 
                                             if event.getActionCommand().lower().startswith("close"):
@@ -9111,6 +9168,8 @@ Visit: %s (Author's site)
 
                                                 elif str(remtype) == 'TRANSACTION':
                                                     txnparent = rem.getTransaction()
+                                                    if isinstance(txnparent, ParentTxn): pass
+
                                                     amount = baseCurr.getDoubleValue(txnparent.getValue())
                                                     stripacct = txnparent.getAccount().getFullAccountName().strip()
 
@@ -9166,7 +9225,8 @@ Visit: %s (Author's site)
                                             "SplitAmount",
                                             "Category",
                                             "Description",
-                                            "Memo"
+                                            "Memo",
+                                            "Tags"
                                         ]
 
                                         GlobalVars.headerFormats_ERTC = [[Number,JLabel.CENTER],
@@ -9184,6 +9244,7 @@ Visit: %s (Author's site)
                                                          [String,JLabel.LEFT],
                                                          [String,JLabel.CENTER],
                                                          [Number,JLabel.RIGHT],
+                                                         [String,JLabel.LEFT],
                                                          [String,JLabel.LEFT],
                                                          [String,JLabel.LEFT],
                                                          [String,JLabel.LEFT]
@@ -9301,6 +9362,7 @@ Visit: %s (Author's site)
                                                 csvline.append('')  # Category
                                                 csvline.append('')  # Description
                                                 csvline.append('"' + memo + '"')  # Memo
+                                                csvline.append('')  # tags
                                                 GlobalVars.csvlines_reminders.append(csvline)
 
                                             elif str(remtype) == 'TRANSACTION':
@@ -9308,17 +9370,27 @@ Visit: %s (Author's site)
                                                 amount = GlobalVars.baseCurrency.getDoubleValue(txnparent.getValue())
 
                                                 for index2 in range(0, int(txnparent.getOtherTxnCount())):
-                                                    splitdesc = txnparent.getOtherTxn(index2).getDescription().replace(","," ")  # remove commas to keep csv format happy
-                                                    splitmemo = txnparent.getMemo().replace(",", " ")  # remove commas to keep csv format happy
+                                                    splitTxn = txnparent.getOtherTxn(index2)
+                                                    if isinstance(splitTxn, SplitTxn): pass
+
+                                                    # remove commas to keep csv format happy....
+                                                    splitdesc = splitTxn.getDescription().replace(",", " ").strip()
+                                                    splitmemo = txnparent.getMemo().replace(",", " ").strip()
                                                     maindesc = txnparent.getDescription().replace(",", " ").strip()
 
                                                     if index2 > 0: amount = ''  # Don't repeat the new amount on subsequent split lines (so you can total column). The split amount will be correct
 
-                                                    # stripacct = str(txnparent.getAccount()).replace(",", " ").strip()  # remove commas to keep csv format happy
-                                                    stripacct = txnparent.getAccount().getFullAccountName().replace(",", " ").strip()  # remove commas to keep csv format happy
+                                                    # stripacct = str(txnparent.getAccount()).replace(",", " ").strip()
+                                                    stripacct = txnparent.getAccount().getFullAccountName().replace(",", " ").strip()
 
-                                                    # stripcat = str(txnparent.getOtherTxn(index2).getAccount()).replace(","," ").strip()  # remove commas to keep csv format happy
-                                                    stripcat = txnparent.getOtherTxn(index2).getAccount().getFullAccountName().replace(","," ").strip()  # remove commas to keep csv format happy
+                                                    # stripcat = str(splitTxn.getAccount()).replace(","," ").strip()
+                                                    stripcat = splitTxn.getAccount().getFullAccountName().replace(","," ").strip()
+
+                                                    # use set() to create a unique list, and OR to concatenate...
+                                                    splitTags = list(set(txnparent.getKeywords() if index2 == 0 else []) | set(splitTxn.getKeywords()))
+                                                    splitTagsAsStr = ""
+                                                    if len(splitTags) > 0:
+                                                        splitTagsAsStr = "[%s]" %(", ".join(unicode(tag) for tag in splitTags))
 
                                                     csvline = []
                                                     csvline.append(index + 1)
@@ -9335,10 +9407,11 @@ Visit: %s (Author's site)
                                                     csvline.append(stripacct)
                                                     csvline.append(maindesc)
                                                     csvline.append(str(index + 1) + '.' + str(index2 + 1))
-                                                    csvline.append(GlobalVars.baseCurrency.getDoubleValue(txnparent.getOtherTxn(index2).getValue()) * -1)
+                                                    csvline.append(GlobalVars.baseCurrency.getDoubleValue(splitTxn.getValue()) * -1)
                                                     csvline.append(stripcat)
                                                     csvline.append(splitdesc)
                                                     csvline.append(splitmemo)
+                                                    csvline.append(splitTagsAsStr)
                                                     GlobalVars.csvlines_reminders.append(csvline)
 
                                             index += 1
@@ -9594,6 +9667,12 @@ Visit: %s (Author's site)
                                         def __init__(self, tableModel):
                                             super(JTable, self).__init__(tableModel)
                                             self.fixTheRowSorter()
+                                            self.getRowSorter().addRowSorterListener(self)
+
+                                        def sorterChanged(self, e):
+                                            # myPrint("DB", "sorterChanged - event:", e)
+                                            super(self.__class__, self).sorterChanged(e)
+                                            GlobalVars.saveRemindersSortKeys = self.getRowSorter().getSortKeys()
 
                                         # noinspection PyMethodMayBeStatic
                                         # noinspection PyUnusedLocal
@@ -9696,7 +9775,10 @@ Visit: %s (Author's site)
                                                     sorter.setComparator(_iii, self.MyTextNumberComparator("N"))
                                                 else:
                                                     sorter.setComparator(_iii, self.MyTextNumberComparator("T"))
-                                            self.getRowSorter().toggleSortOrder(0)
+                                            if GlobalVars.saveRemindersSortKeys is None:
+                                                self.getRowSorter().toggleSortOrder(0)
+                                            else:
+                                                self.getRowSorter().setSortKeys(GlobalVars.saveRemindersSortKeys)
 
                                         # make Banded rows
                                         def prepareRenderer(self, renderer, row, column):  								# noqa
@@ -9765,7 +9847,7 @@ Visit: %s (Author's site)
                                         GlobalVars.reminderTableCount_ERTC += 1
                                         myPrint("D", _THIS_EXTRACT_NAME + "In ", inspect.currentframe().f_code.co_name, "()", ind, "  - On iteration/call: ", GlobalVars.reminderTableCount_ERTC)
 
-                                        myDefaultWidths = [70,95,110,150,150,95,95,95,120,100,80,100,150,50,100,150,150,150]
+                                        myDefaultWidths = [70,95,110,150,150,95,95,95,120,100,80,100,150,50,100,150,150,150,150]
 
                                         validCount=0
                                         lInvalidate=True
@@ -9911,9 +9993,12 @@ Visit: %s (Author's site)
                                         extract_data_frame_.getRootPane().getActionMap().remove("print-me")
                                         extract_data_frame_.getRootPane().getActionMap().put("print-me", PrintJTable(extract_data_frame_, GlobalVars.table, "Extract Reminders"))
 
-                                        GlobalVars.table.getTableHeader().setReorderingAllowed(True)  # no more drag and drop columns, it didn't work (on the footer)
+                                        GlobalVars.table.getTableHeader().setReorderingAllowed(True)
                                         GlobalVars.table.getTableHeader().setDefaultRenderer(DefaultTableHeaderCellRenderer())
                                         GlobalVars.table.selectionMode = ListSelectionModel.SINGLE_SELECTION
+
+
+
 
                                         fontSize = GlobalVars.table.getFont().getSize()+5
                                         GlobalVars.table.setRowHeight(fontSize)
@@ -10074,6 +10159,7 @@ Visit: %s (Author's site)
                                                                     fixFormatsStr(GlobalVars.csvlines_reminders[_iii][15], False),
                                                                     fixFormatsStr(GlobalVars.csvlines_reminders[_iii][16], False),
                                                                     fixFormatsStr(GlobalVars.csvlines_reminders[_iii][17], False),
+                                                                    fixFormatsStr(GlobalVars.csvlines_reminders[_iii][18], False),
                                                                     ""])
                                                             except:
                                                                 _msgTxt = _THIS_EXTRACT_NAME + "@@ ERROR writing to CSV on row %s. Please review console" %(_iii)
@@ -10374,11 +10460,12 @@ Visit: %s (Author's site)
                                         "_SPLITTAGS":               [22, "SplitTags"],
                                         "_ISTRANSFERTOACCT":        [23, "isTransferToAnotherAccount"],
                                         "_ISTRANSFERSELECTED":      [24, "isTransferWithinThisExtract"],
-                                        "_SPLITHASATTACHMENTS":     [25, "SplitHasAttachments"],
-                                        "_ATTACHMENTLINK":          [26, "AttachmentLink"],
-                                        "_ATTACHMENTLINKREL":       [27, "AttachmentLinkRelative"],
-                                        "_KEY":                     [28, "Key"],
-                                        "_END":                     [29, "_END"]
+                                        "_ISPARENTTXN":             [25, "isParentTxn"],
+                                        "_SPLITHASATTACHMENTS":     [26, "SplitHasAttachments"],
+                                        "_ATTACHMENTLINK":          [27, "AttachmentLink"],
+                                        "_ATTACHMENTLINKREL":       [28, "AttachmentLinkRelative"],
+                                        "_KEY":                     [29, "Key"],
+                                        "_END":                     [30, "_END"]
                                     }
 
                                     GlobalVars.transactionTable = []
@@ -10550,7 +10637,9 @@ Visit: %s (Author's site)
                                         if reconciledAsOf is not None and reconciledAsOf != 0:
                                             _row[GlobalVars.dataKeys["_RECONCILED_ASOF"][_COLUMN]] = reconciledAsOf
 
-                                        _row[GlobalVars.dataKeys["_CHEQUE"][_COLUMN]] = txn.getCheckNumber()
+                                        check = txn.getCheckNumber()
+                                        pCheck = parent_Txn.getCheckNumber()
+                                        _row[GlobalVars.dataKeys["_CHEQUE"][_COLUMN]] = check if check != "" else pCheck  # use the parent check if the split's check is missing
 
                                         _row[GlobalVars.dataKeys["_DESC"][_COLUMN]] = parent_Txn.getDescription()
                                         if lParent:
@@ -10702,6 +10791,7 @@ Visit: %s (Author's site)
                                             splitRowCopy[GlobalVars.dataKeys["_SPLITHASATTACHMENTS"][_COLUMN]] = splitHasAttachments
                                             splitRowCopy[GlobalVars.dataKeys["_ISTRANSFERTOACCT"][_COLUMN]] = isTransfer
                                             splitRowCopy[GlobalVars.dataKeys["_ISTRANSFERSELECTED"][_COLUMN]] = isTransferWithinExtract
+                                            splitRowCopy[GlobalVars.dataKeys["_ISPARENTTXN"][_COLUMN]] = lParent
 
                                             holdTheKeys = ArrayList()
                                             holdTheLocations = ArrayList()
@@ -10869,16 +10959,24 @@ Visit: %s (Author's site)
                                         print
 
                                         myPrint("DB", _THIS_EXTRACT_NAME + "Now pre-processing the file to convert integer dates and strip non-ASCII if requested....")
+                                        _rowIdx = 1
+                                        _preprocessingError = False
                                         for _theRow in GlobalVars.transactionTable:
-
                                             for convColumn in ["_DATE", "_TAXDATE", "_DATE_ENTERED", "_SYNC_DATE", "_RECONCILED_DATE", "_RECONCILED_ASOF"]:
                                                 if _theRow[GlobalVars.dataKeys[convColumn][_COLUMN]]:
-                                                    dateasdate = datetime.datetime.strptime(str(_theRow[GlobalVars.dataKeys[convColumn][_COLUMN]]), "%Y%m%d")  # Convert to Date field
-                                                    _dateoutput = dateasdate.strftime(GlobalVars.saved_extractDateFormat_SWSS)
+                                                    _dateTmp = _theRow[GlobalVars.dataKeys[convColumn][_COLUMN]]
+                                                    if _dateTmp >= 19000101:
+                                                        dateasdate = datetime.datetime.strptime(str(_dateTmp), "%Y%m%d")    # Convert to Date field
+                                                        _dateoutput = dateasdate.strftime(GlobalVars.saved_extractDateFormat_SWSS)
+                                                    else:
+                                                        _preprocessingError = True
+                                                        myPrint("B", "ALERT: INVALID DATE < 19000101 - found on csv row: %s col: %s raw date int: '%s'" %(_rowIdx+1, convColumn, _dateTmp))
+                                                        _dateoutput = "??%s??" %(_dateTmp)
                                                     _theRow[GlobalVars.dataKeys[convColumn][_COLUMN]] = _dateoutput
 
                                             for col in range(0, GlobalVars.dataKeys["_ATTACHMENTLINK"][_COLUMN]):  # DO NOT MESS WITH ATTACHMENT LINK NAMES!!
                                                 _theRow[col] = fixFormatsStr(_theRow[col])
+                                            _rowIdx += 1
 
                                         myPrint("B", _THIS_EXTRACT_NAME + "Opening file and writing %s records"  %(len(GlobalVars.transactionTable)))
 
@@ -10957,6 +11055,11 @@ Visit: %s (Author's site)
                                                     writer.writerow(["Selected Start Date................: %s" %(convertStrippedIntDateFormattedText(GlobalVars.saved_filterDateRangeStart_EAR))])
                                                     writer.writerow(["Selected End Date..................: %s" %(convertStrippedIntDateFormattedText(GlobalVars.saved_filterDateRangeEnd_EAR))])
                                                     writer.writerow(["user date format...................: %s" %(GlobalVars.saved_extractDateFormat_SWSS)])
+
+                                            if _preprocessingError:
+                                                _msgTxt = _THIS_EXTRACT_NAME + "@@ WARNING - non-critical date issue found preprocessing file (review console) @@"
+                                                myPrint("B", _msgTxt)
+                                                GlobalVars.AUTO_MESSAGES.append(_msgTxt)
 
                                             _msgTxt = _THIS_EXTRACT_NAME + "CSV file: '%s' created (%s records)" %(GlobalVars.csvfilename, len(GlobalVars.transactionTable))
                                             myPrint("B", _msgTxt)
@@ -11635,8 +11738,10 @@ Visit: %s (Author's site)
                                                         _row[GlobalVars.dataKeys["_SECINFO_BOND_FACEVALUE"][_COLUMN]] = "" if (securityAcct.getFaceValue() == 0) else acctCurr.format(securityAcct.getFaceValue(), GlobalVars.decimalCharSep)
                                                         _row[GlobalVars.dataKeys["_SECINFO_BOND_APR"][_COLUMN]] = "" if (securityAcct.getAPR() == 0.0) else securityAcct.getAPR()
 
-                                                        if (securityAcct.getMaturity() != 0 and securityAcct.getMaturity() != 39600000):
-                                                            _row[GlobalVars.dataKeys["_SECINFO_BOND_MATURITYDATE"][_COLUMN]] = DateUtil.convertLongDateToInt(securityAcct.getMaturity())
+                                                        matDate = securityAcct.getMaturity()
+                                                        matDateInt = DateUtil.convertLongDateToInt(securityAcct.getMaturity())
+                                                        if (matDate != 0 and (matDate < 0 or matDate > 80000000)):  # ignore default of 01/01/1970
+                                                            _row[GlobalVars.dataKeys["_SECINFO_BOND_MATURITYDATE"][_COLUMN]] = matDateInt
 
                                                     if securityAcct.getSecurityType() == SecurityType.OPTION:
                                                         _row[GlobalVars.dataKeys["_SECINFO_STKOPT_CALLPUT"][_COLUMN]] = "Put" if securityAcct.getPut() else "Call"
@@ -11974,20 +12079,26 @@ Visit: %s (Author's site)
                                         print
 
                                         myPrint("DB", _THIS_EXTRACT_NAME + "Now pre-processing the file to convert integer dates and strip non-ASCII if requested....")
+                                        _rowIdx = 1
+                                        _preprocessingError = False
                                         for _theRow in GlobalVars.transactionTable:
-
                                             for convColumn in ["_DATE", "_TAXDATE", "_DATE_ENTERED", "_SYNC_DATE", "_RECONCILED_DATE", "_RECONCILED_ASOF"]:
                                                 if _theRow[GlobalVars.dataKeys[convColumn][_COLUMN]]:
-                                                    dateasdate = datetime.datetime.strptime(str(_theRow[GlobalVars.dataKeys[convColumn][_COLUMN]]), "%Y%m%d")  # Convert to Date field
-                                                    _dateoutput = dateasdate.strftime(GlobalVars.saved_extractDateFormat_SWSS)
+                                                    _dateTmp = _theRow[GlobalVars.dataKeys[convColumn][_COLUMN]]
+                                                    if _dateTmp >= 19000101:
+                                                        dateasdate = datetime.datetime.strptime(str(_dateTmp), "%Y%m%d")    # Convert to Date field
+                                                        _dateoutput = dateasdate.strftime(GlobalVars.saved_extractDateFormat_SWSS)
+                                                    else:
+                                                        _preprocessingError = True
+                                                        myPrint("B", "ALERT: INVALID DATE < 19000101 - found on csv row: %s col: %s raw date int: '%s'" %(_rowIdx+1, convColumn, _dateTmp))
+                                                        _dateoutput = "??%s??" %(_dateTmp)
                                                     _theRow[GlobalVars.dataKeys[convColumn][_COLUMN]] = _dateoutput
 
                                             for col in range(0, GlobalVars.dataKeys["_SECSHRHOLDING"][_COLUMN]):
                                                 _theRow[col] = fixFormatsStr(_theRow[col])
+                                            _rowIdx += 1
 
                                         myPrint("B", _THIS_EXTRACT_NAME + "Opening file and writing %s records" %(len(GlobalVars.transactionTable)))
-
-
                                         try:
                                             # CSV Writer will take care of special characters / delimiters within fields by wrapping in quotes that Excel will decode
                                             with open(GlobalVars.csvfilename, "wb") as csvfile:  # PY2.7 has no newline parameter so opening in binary; juse "w" and newline='' in PY3.0
@@ -12066,6 +12177,11 @@ Visit: %s (Author's site)
                                                     writer.writerow(["Omit LOT matching data.............: %s" %(GlobalVars.saved_lOmitLOTDataFromExtract_EIT)])
                                                     writer.writerow(["Extract extra Sec Acct Info........: %s" %(GlobalVars.saved_lExtractExtraSecurityAcctInfo)])
                                                     writer.writerow(["Download Attachments...............: %s" %(GlobalVars.saved_lExtractAttachments_EIT)])
+
+                                            if _preprocessingError:
+                                                _msgTxt = _THIS_EXTRACT_NAME + "@@ WARNING - non-critical date issue found preprocessing file (review console) @@"
+                                                myPrint("B", _msgTxt)
+                                                GlobalVars.AUTO_MESSAGES.append(_msgTxt)
 
                                             _msgTxt = _THIS_EXTRACT_NAME + "CSV file: '%s' created (%s records)" %(GlobalVars.csvfilename, len(GlobalVars.transactionTable))
                                             myPrint("B", _msgTxt)
@@ -12465,6 +12581,184 @@ Visit: %s (Author's site)
                                         return False
                             #### ENDIF lExtractCurrencyHistory ####
 
+                            if lExtractCategoryInfo:
+
+                                # ##########################################
+                                # EXTRACT_CATEGORY_INFO_CSV PARAMETER SCREEN
+                                # ##########################################
+
+                                _THIS_EXTRACT_NAME = pad("EXTRACT: Category Information:", 34)
+                                GlobalVars.lGlobalErrorDetected = False
+
+                                if not GlobalVars.HANDLE_EVENT_AUTO_EXTRACT_ON_CLOSE:
+                                    self.super__publish([_THIS_EXTRACT_NAME.strip()])                                   # noqa
+
+                                GlobalVars.csvfilename = getExtractFullPath("ECI")
+
+                                def do_extract_category_info():
+                                    myPrint("DB", _THIS_EXTRACT_NAME + "\nScript running to extract your category information..............")
+                                    myPrint("DB", _THIS_EXTRACT_NAME + "-------------------------------------------------------------------")
+
+                                    header = ["Type",
+                                              "CategoryName",
+                                              "Status",
+                                              "TaxRelated",
+                                              "InternalUUID",
+                                              "Comments"]
+
+                                    def list_category_info():
+                                        cat_table = []
+
+                                        book = MD_REF.getCurrentAccountBook()
+                                        allAccounts = sorted(AccountUtil.allMatchesForSearch(book, AcctFilter.ALL_ACCOUNTS_FILTER), key=lambda sort_x: (sort_x.getAccountType(), sort_x.getFullAccountName().upper()))
+
+                                        myPrint("DB", _THIS_EXTRACT_NAME + "\nIterating the category (account) table...")
+                                        for cat in allAccounts:
+                                            if not cat.getAccountType().isCategory(): continue
+                                            row = []
+                                            row.append(unicode(cat.getAccountType()))
+                                            row.append(cat.getFullAccountName())
+                                            row.append("I" if cat.getAccountOrParentIsInactive() else "A")
+                                            row.append("TAX" if cat.isTaxRelated() else "")
+                                            row.append(cat.getUUID())
+                                            row.append(cat.getComment())
+                                            cat_table.append(row)
+
+                                        return cat_table
+
+                                    categoryTable = list_category_info()
+
+                                    def ExtractDataToFile(theTable, _header):                                           # noqa
+                                        myPrint("D", _THIS_EXTRACT_NAME + "In ", inspect.currentframe().f_code.co_name, "()")
+
+                                        _TYPE = 0
+                                        _CATNAME = 1
+
+                                        # already sorted
+                                        # theTable = sorted(theTable, key=lambda x: (safeStr(x[_TYPE]).upper(),x[_CATNAME]))
+
+                                        myPrint("DB", _THIS_EXTRACT_NAME + "Now pre-processing the file....")
+                                        for row in theTable:                                                            # noqa
+                                            if GlobalVars.saved_lStripASCII_SWSS:
+                                                for col in range(0, len(row)):
+                                                    row[col] = fixFormatsStr(row[col])
+
+                                        theTable.insert(0,_header)  # Insert Column Headings at top of list. A bit rough and ready, not great coding, but a short list...!
+
+                                        # Write the theTable to a file
+                                        myPrint("B", _THIS_EXTRACT_NAME + "Opening file and writing %s records" %(len(theTable)))
+
+                                        try:
+                                            # CSV Writer will take care of special characters / delimiters within fields by wrapping in quotes that Excel will decode
+                                            # with open(GlobalVars.csvfilename, "wb") as csvfile:  # PY2.7 has no newline parameter so opening in binary; just use "w" and newline='' in PY3.0
+                                            with open(GlobalVars.csvfilename, "wb") as csvfile:    # PY2.7 has no newline parameter so opening in binary; just use "w" and newline='' in PY3.0
+
+                                                if GlobalVars.saved_lWriteBOMToExportFile_SWSS:
+                                                    csvfile.write(codecs.BOM_UTF8)   # This 'helps' Excel open file with double-click as UTF-8
+
+                                                writer = csv.writer(csvfile, dialect='excel', quoting=csv.QUOTE_MINIMAL, delimiter=fix_delimiter(GlobalVars.saved_csvDelimiter_SWSS))
+
+                                                if GlobalVars.saved_csvDelimiter_SWSS != ",":
+                                                    writer.writerow(["sep=",""])  # Tells Excel to open file with the alternative delimiter (it will add the delimiter to this line)
+
+                                                if not GlobalVars.saved_lSimplify_ECH:
+                                                    try:
+                                                        for i in range(0, len(theTable)):
+                                                            try:
+                                                                writer.writerow( theTable[i] )
+                                                            except:
+                                                                myPrint("B", _THIS_EXTRACT_NAME + "Error writing row %s to file... Older Jython version?" %i)
+                                                                myPrint("B", _THIS_EXTRACT_NAME + "Row: ", theTable[i])
+                                                                myPrint("B", _THIS_EXTRACT_NAME + "Will attempt coding back to str()..... Let's see if this fails?!")
+                                                                for _col in range(0, len(theTable[i])):
+                                                                    theTable[i][_col] = fix_delimiter(theTable[i][_col])
+                                                                writer.writerow( theTable[i] )
+                                                    except:
+                                                        _msgTxt = _THIS_EXTRACT_NAME + "@@ ERROR writing to CSV on row %s. Please review console" %(i)
+                                                        GlobalVars.AUTO_MESSAGES.append(_msgTxt)
+                                                        myPrint("B", _msgTxt)
+                                                        myPrint("B", _THIS_EXTRACT_NAME, theTable[i])
+                                                        raise
+
+                                                    if GlobalVars.saved_lWriteParametersToExportFile_SWSS:
+                                                        today = Calendar.getInstance()
+                                                        writer.writerow([""])
+                                                        writer.writerow(["StuWareSoftSystems - " + GlobalVars.thisScriptName + "(build: "
+                                                                         + version_build
+                                                                         + ")  Moneydance Python Script - Date of Extract: "
+                                                                         + str(GlobalVars.sdf.format(today.getTime()))])
+
+                                                        writer.writerow([""])
+                                                        writer.writerow(["Dataset path/name: %s" %(MD_REF.getCurrentAccountBook().getRootFolder()) ])
+
+                                                        writer.writerow([""])
+                                                        writer.writerow(["User Parameters..."])
+                                                        writer.writerow(["<none>"])
+
+                                            _msgTxt = _THIS_EXTRACT_NAME + "CSV file: '%s' created (%s records)" %(GlobalVars.csvfilename, len(theTable))
+                                            myPrint("B", _msgTxt)
+                                            GlobalVars.AUTO_MESSAGES.append(_msgTxt)
+                                            GlobalVars.countFilesCreated += 1
+
+                                        except:
+                                            e_type, exc_value, exc_traceback = sys.exc_info()                           # noqa
+                                            _msgTxt = _THIS_EXTRACT_NAME + "@@ ERROR '%s' detected writing file: '%s' - Extract ABORTED!" %(exc_value, GlobalVars.csvfilename)
+                                            GlobalVars.AUTO_MESSAGES.append(_msgTxt)
+                                            myPrint("B", _msgTxt)
+                                            raise
+
+                                    def fixFormatsStr(theString, lNumber=False, sFormat=""):
+                                        if isinstance(theString, bool): return theString
+
+                                        if isinstance(theString, int) or isinstance(theString, float):
+                                            lNumber = True
+
+                                        if lNumber is None: lNumber = False
+                                        if theString is None: theString = ""
+
+                                        if sFormat == "%" and theString != "":
+                                            theString = "{:.1%}".format(theString)
+                                            return theString
+
+                                        if lNumber: return str(theString)
+
+                                        theString = theString.strip()  # remove leading and trailing spaces
+
+                                        theString = theString.replace("\n", "*")  # remove newlines within fields to keep csv format happy
+                                        theString = theString.replace("\t", "*")  # remove tabs within fields to keep csv format happy
+
+                                        if GlobalVars.saved_lStripASCII_SWSS:
+                                            all_ASCII = ''.join(char for char in theString if ord(char) < 128)  # Eliminate non ASCII printable Chars too....
+                                        else:
+                                            all_ASCII = theString
+                                        return all_ASCII
+
+                                    ExtractDataToFile(categoryTable, header)
+                                    if not GlobalVars.lGlobalErrorDetected:
+                                        _msgTextx = _THIS_EXTRACT_NAME + "Extract file CREATED (%s records)" %(len(categoryTable)+1)
+                                        myPrint("B", _msgTextx)
+                                    else:
+                                        _msgTextx = _THIS_EXTRACT_NAME + "ERROR Creating extract (review console for error messages)...."
+                                        GlobalVars.AUTO_MESSAGES.append(_msgTextx)
+                                    del categoryTable
+
+                                try:
+                                    do_extract_category_info()
+                                except:
+                                    GlobalVars.lGlobalErrorDetected = True
+
+                                if GlobalVars.lGlobalErrorDetected:
+                                    GlobalVars.countErrorsDuringExtract += 1
+                                    _txt = "@@ ERROR: do_extract_category_info() has failed (review console)!"
+                                    GlobalVars.AUTO_MESSAGES.append(_txt)
+                                    myPrint("B", _txt)
+                                    dump_sys_error_to_md_console_and_errorlog()
+                                    if not GlobalVars.AUTO_EXTRACT_MODE:
+                                        DoExtractsSwingWorker.killPleaseWait()
+                                        genericSwingEDTRunner(True, True, myPopupInformationBox, extract_data_frame_, _txt, "ERROR", JOptionPane.ERROR_MESSAGE)
+                                        return False
+                            #### ENDIF lExtractCategoryInfo ####
+
                             if lExtractSecurityBalances:
                                 # ####################################################
                                 # EXTRACT_SECURITY_BALANCES_CSV EXECUTION
@@ -12793,8 +13087,10 @@ Visit: %s (Author's site)
                                                 _row[GlobalVars.dataKeys["_SECINFO_BOND_FACEVALUE"][_COLUMN]] = "" if (securityAcct.getFaceValue() == 0) else investAcctCurr.format(securityAcct.getFaceValue(), GlobalVars.decimalCharSep)
                                                 _row[GlobalVars.dataKeys["_SECINFO_BOND_APR"][_COLUMN]] = "" if (securityAcct.getAPR() == 0.0) else securityAcct.getAPR()
 
-                                                if (securityAcct.getMaturity() != 0 and securityAcct.getMaturity() != 39600000):
-                                                    _row[GlobalVars.dataKeys["_SECINFO_BOND_MATURITYDATE"][_COLUMN]] = DateUtil.convertLongDateToInt(securityAcct.getMaturity())
+                                                matDate = securityAcct.getMaturity()
+                                                matDateInt = DateUtil.convertLongDateToInt(securityAcct.getMaturity())
+                                                if (matDate != 0 and (matDate < 0 or matDate > 80000000)):  # ignore default of 01/01/1970
+                                                    _row[GlobalVars.dataKeys["_SECINFO_BOND_MATURITYDATE"][_COLUMN]] = matDateInt
 
                                             if securityAcct.getSecurityType() == SecurityType.OPTION:
                                                 _row[GlobalVars.dataKeys["_SECINFO_STKOPT_CALLPUT"][_COLUMN]] = "Put" if securityAcct.getPut() else "Call"
@@ -12967,8 +13263,13 @@ Visit: %s (Author's site)
                                             if not GlobalVars.saved_lOmitExtraSecurityDataFromExtract_ESB:
                                                 val = _theRow[GlobalVars.dataKeys["_SECINFO_BOND_MATURITYDATE"][_COLUMN]]
                                                 if val is not None and val != "":
-                                                    dateasdate = datetime.datetime.strptime(str(val), "%Y%m%d")       # Convert to Date field
-                                                    _dateoutput = dateasdate.strftime(GlobalVars.saved_extractDateFormat_SWSS)
+
+                                                    try:
+                                                        dateasdate = datetime.datetime.strptime(str(val), "%Y%m%d")       # Convert to Date field
+                                                        _dateoutput = dateasdate.strftime(GlobalVars.saved_extractDateFormat_SWSS)
+                                                    except:
+                                                        _dateoutput = "<ERROR: '%s'>" %(val)
+
                                                     _theRow[GlobalVars.dataKeys["_SECINFO_BOND_MATURITYDATE"][_COLUMN]] = _dateoutput
 
                                             for convColumn in ["_HIDDENPRICEDATE", "_MOSTRECENTPRICEDATE"]:
@@ -13812,6 +14113,7 @@ Visit: %s (Author's site)
                             if lExtractAccountRegisters:    msgs.append("Extract Account Registers          REQUESTED")
                             if lExtractInvestmentTxns:      msgs.append("Extract Investment Transactions    REQUESTED")
                             if lExtractCurrencyHistory:     msgs.append("Extract Currency History           REQUESTED")
+                            if lExtractCategoryInfo:        msgs.append("Extract Category Information       REQUESTED")
                             if lExtractSecurityBalances:    msgs.append("Extract Security Balances          REQUESTED")
                             if lExtractAccountBalances:     msgs.append("Extract Account Balances           REQUESTED")
                             if lExtractTrunk:               msgs.append("Extract raw Trunk file             REQUESTED")

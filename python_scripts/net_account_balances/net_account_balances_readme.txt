@@ -1,8 +1,8 @@
-Author: Stuart Beesley - StuWareSoftSystems (March 2021 - a lockdown project) - Last updated January 2024
-Credit: (slack: @dtd) aka Dan T Davis for his input, testing and suggestions to make a (MUCH) better product......
+Author: Stuart Beesley - StuWareSoftSystems (created March 2021 - last updated: September 2025)
+Credit: (slack: @dtd) aka Dan T Davis for his input, testing, patience and suggestions to make a (much) better product..
 
 Custom Balances works with 2021.1(3056) and newer.
-DISCLAIMER: THIS EXTENSION IS READONLY (IT DOES NOT CHANGE DATA) >> BUT YOU USE AT YOUR OWN RISK!
+DISCLAIMER: THIS EXTENSION IS READONLY (IT DOES NOT CHANGE DATA) >> YOU USE AT YOUR OWN RISK!
 
 DEFINITIONS:
 - CB means this extension / Custom Balances
@@ -32,26 +32,6 @@ This extension creates a 'widget' that calculates / displays totals on the Money
 - You can change the name of each row, the balance type, and the currency to display. Also Active/Inactive items.
 
 ------------------------------------------------------------------------------------------------------------------------
-UPGRADE NOTES:
-If you have been using recent PREVIEW builds (since 1038 / November 2023) then you may have configured
-'Final Maths Calculation' (FMC), and also come across 'absorbed into other UORs' and also 'not absorbed'. These settings
-have gone, and have been migrated into:
-a) 'Post UOR maths calculation' (PUM) (replacing FMC absorbed), or...
-b) 'Format Display Adjust' (FDA)      (replacing FMC non-absorbed).
-
-DEFINITION: 'absorbed' in this context means that the math takes place before being rolled upwards into other
-UORs that refer to this row... I.e. 'non-absorbed' means the impact of the maths stays on this row alone.
-
-There is a new exciting Formula (FOR) capability with this build. This in effect can replace RMC, UOR, PUM. You can
-continue to use these, or use the new superior formula capability. You can actually combine all these, but this is
-NOT RECOMMENDED as it's duplicative and confusing to understand. RECOMMENDATION: if you want to use formulas, then
-manually update your settings to only use formula. Average by is not affected by this change. FDA and *100 can remain,
-or be replaced by formula - your choice.
-
-Formula gives you the ability to add multiple rows together, or perhaps subtract one row from another (for example).
-These types of calculations are quite tricky to perform using the 'old' UOR maths.
-------------------------------------------------------------------------------------------------------------------------
-
 LET'S GET STARTED:
 
 The GUI config screen utilises a split screen to show you the main settings (top) and the accounts picklist (bottom).
@@ -115,6 +95,17 @@ CHOICES/CONFIGURATION FOR A ROW:
                         - When AutoSum is on, all securities get totalled into the Investment account (including cash)
 
   - You set the AutoSum setting by row. Thus some rows can be on, and others can be off.
+
+- Apply Net Worth rules: Default OFF. When enabled, selected accounts will have Moneydance's 'include in net worth'
+                         flag checked, and this will determine whether that account's balance will actually be included.
+                         In other words, accounts selected for inclusion in this row's balance may be ignored /
+                         excluded anyway if this setting is enabled and the account is flagged to be excluded from NW.
+                         When enabling this setting, you still must select all accounts to be considered in the picklist
+                         If you enable this feature and then revert to an older version of Moneydance, then this setting
+                         will simply be ignored, perhaps giving different results. (enabled from MD2024.3(5204) onwards).
+
+                         ** NOTE: this setting will force parallel balances to be calculated for that row...
+                                  rows with this setting enabled may be slower to calculate than by using other means.
 
 - Override Balance asof Date:  Allows you to obtain the balance asof a specified date.
         - Includes all transactions / balances up to, and including, the selected balance asof date
@@ -254,7 +245,7 @@ MATH ON CALCULATED BALANCES:
 
 - Maths using another row (UOR): You can retrieve the result from another row(x) and then apply maths to the result of
                                  the current row.. E.g. take this row and divide it by the result from row(x).
-                                 E.g. this could calculate the value of investments as a percentage of total networth.
+                                 E.g. this could calculate the value of investments as a percentage of total net worth.
                                  UORs can be chained together. E.G. row 3 can use row 2 and row 2 can use row 1
 
                                  WARNING: There is no currency conversion between chained UORs
@@ -276,21 +267,29 @@ MATH ON CALCULATED BALANCES:
 
 - Formula (FOR): You can write a formula expression to be applied (AFTER any RMC, UOR, PUM options).
 
-                 - You probably (always) should start with the default tag '@this'. @this will pull in this row's
+                 - You probably (always) should start with the default tag '@this' >> @this will pull in this row's
                    calculated balance without having to set a 'tag'... Or you can just set a tag on this row and refer
                    to it... If you don't refer to this row, then the result of any formula will ignore any selected
                    pre-formula accounts / RMC, UOR, PUM calculations etc....
 
                    Example formulas: '((@this - applestock) / networth) * 100.0'
-                                     '@this * 0.2' or '(rowtagname / otherrowtagname)' or '@danspecialnumber'
-                                     'NetWorth / @pi' or 'random()' or '@mdbuild * @mdversion'
+                                     '@this * 0.2' or '(rowtagname / otherrowtagname)'
+                                     'networth / @pi' or 'random()' or '@mdbuild * @mdversion'
+                                     'useifgt(sum(rowtagname1,rowtagname2,rowtagname3), 0)'
 
                  - You can also enter currencyIDs / security ticker symbols if you wish
                    (if setup in tools>Currencies / tools>Securities) >> E.g. '@this * @GBP' or '@this * @APPL'
 
+                 - You can use @@ in front of currencyIDs to pass a literal currency ID to functions that can translate
+                   values to a target currency - e.g. @@GBP (instead of @GBP which returns the current rate)
+
+                 - The magic tags @today and @asof will be translated to integer date values compatible with many
+                   Moneydance API call parameters. The translated value will be in yyyymmdd format - e.g. 20241231
+                   Your country/locale is irrelevant, this format is fixed. Refer: net worth function(s) below.
+
                  - Formula can refer to the calculated result from any row with a 'tag' name (including it's own row)
 
-                 - For example '((investments / networth) * 100)' to obtain your investments as a percentage of networth
+                 - For example '((investments / networth) * 100)' to obtain investments as a percentage of net worth
                    ... assuming that you set the tags 'investments' and 'networth' on the appropriate row(s)
 
                  - Formulas NEVER absorb / roll up into other UORs
@@ -303,12 +302,56 @@ MATH ON CALCULATED BALANCES:
                    management, you should probably only use (RMC, UOR, PUM) -OR- formulas,
                    ... not both (but it's up to you)!
 
-                 NOTE: Currently, the only functions allowed are: sum(), abs(), min(), max(), round(), float(), random()
-                       ** if these do not work properly for you, please contact the author
+                 SPECIAL FORMULA FUNCTIONS: The following special functions are available for use within formulas:
+                   useifeq(value, compare)      - uses the supplied value if value is equal to compare, else 0
+                   useifneq(value, compare)     - uses the supplied value if value is not equal to compare, else 0
+                   useifgt(value, compare)      - uses the supplied value if value is greater than compare, else 0
+                   useifgte(value, compare)     - uses the supplied value if value is greater than or equal to compare, else 0
+                   useiflt(value, compare)      - uses the supplied value if value is less than compare, else 0
+                   useiflte(value, compare)     - uses the supplied value if value is less than or equal to compare, else 0
+                   other/standard functions available are: sum(), abs(), min(), max(), round(), float(), random()
+
+                   Builds MD2023.3(5204) onwards includes Net Worth calculations (calculated by Moneydance):
+                   nw()   **Net Worth, current balance, all eligible accounts, apply account specific NW exclusion flags
+                   nwif()   Net Worth, current balance, all eligible accounts (ignore all NW exclusion flags)
+                   nwf()    Net Worth, future balance,  all eligible accounts, apply account specific NW exclusion flags
+                   nwfif()  Net Worth, future balance,  all eligible accounts (ignore all NW exclusion flags)
+                   xnw()    Net Worth, current balance, all eligible accounts, only total the excluded accounts (debug)
+                   xnwf()   Net Worth, future balance,  all eligible accounts, only total the excluded accounts (debug)
+                          **this is the formula that most people should use for a 'normal' / 'standard' net worth
+
+                   From build MD2025(5500) onwards:
+                    >> you can optionally pass an asOfDate parameter to these NW functions (except xnw and xnwf).
+                       - the parameter must be integer format yyyymmdd - E.g. nw(20241231)
+                       - do not use this parameter if you just want today, current balance, or future balance.
+                       - you can re-use a row's 'Override Balance asof Date' value with @asof magic tag - e.g. nw(@asof)
+                       - WARNING: These net worth functions are relatively quick when used without a date parameter,
+                                  but become a slightly slower calculation when an asof date is used - use with caution.
+                                  If speed is a concern, then you can manually configure a NW row by just selecting the
+                                  required accounts, rather than using the nw() type formulas...
+                       >> Net worth calculations are cached so you can safely reuse the same function many times
+
+                    >> you can optionally pass a currency id by using a magic tag (literal/id) to net worth functions:
+                       - by default, the result will be returned in your base currency.
+                       - you can re-use a row's 'Display Currency' with the @@rowcurrency magic tag
+                       - you can select any currency using the tag picker - e.g. @@gbp
+                       - using the magic tag @@basecurrency will always convert back to your base currency
+                         - e.g. nw(@@rowcurrency) or nw(@asof, @@gbp)
+
+                   NOTE: When you use these Net Worth formulas, it is not necessary to configure any other settings on
+                         the row unless you plan to use the result of the row in conjunction with the formula.
+                         - i.e. you can just use the formula 'nw() @nothis'
+
+                   NOTE: if you can dream up any additional functions to be added, or if any formulas/functions
+                         do not work properly for you, please contact the author (Stuart Beesley, aka Mr Toolbox).
 
                  WARNING: You can enter an FORMULA with no accounts selected in the picklist. The formula will
                           try to resolve. BUT if you refer to @this or this row's tag, then you will probably get an
                           invalid result!
+
+                 WARNING: If you don't refer to @this in a row's formula you will get a warning. To hide the warning,
+                          either a) disable warnings for that row, or b) specify @nothis anywhere within the formula.
+                          The '@nothis' is simply a marker to disable the warning. It gets excluded from the formula.
 
                  WARNING: NEVER use currency signs or commas in numbers, only use '.' as the decimal place!
 
@@ -332,6 +375,22 @@ MATH ON CALCULATED BALANCES:
                     - You could optionally perform this step manually in the formula too...
                     - 'Multiply by 100' can be important if you haven't already done "math" to make it a true percentage
 
+------------------------------------------------------------------------------------------------------------------------
+- QUICK REFERENCE - FORMULA: TAG, MAGIC TAG, AND SPECIAL VARIABLES - :
+    - rowtagname       Pulls in the result of the (pre-formula) calculation from the row identified with this tag name
+    - @this            Pulls in the result from this row's (pre-formula) calculation
+    - @nothis          Ignore this row's calculation (if any) and prevents any warning about not referencing this row
+    - @today           Today's date in yyyymmdd integer format                              (used as function parameter)
+    - @asof            Pulls in this row's 'Override Balance asof Date' in yyyymmdd format  (used as function parameter)
+    - @@rowcurrency    Pulls in this row's 'Display Currency' literal ID                    (used as function parameter)
+    - @@basecurrency   Pulls the 'base' currency's literal ID                               (used as function parameter)
+    - @currencyID      E.g. @GBP, @USD - Use Tools>Currencies 'Currency ID'. Pulls in the current rate.
+    - @@currencyID     E.g. @@GBP, @@USD - Pulls in the currency's literal ID               (used as function parameter)
+    - @securityTicker  E.g. @APPL, @AMZN - Use Tools>Securities 'Ticker Symbol'. Pulls in the current price.
+    - @@securityTicker E.g. @@APPL, @@AMZN - Pulls in the security's literal ID             (used as function parameter)
+    - @pi              Pulls in the value of Pi                                                           (just for fun)
+    - @mdbuild         Pulls in Moneydance's build number                                                 (just for fun)
+    - @mdversion       Pulls in Moneydance's version number                                               (just for fun)
 ------------------------------------------------------------------------------------------------------------------------
 
 FORMATTING FOR ROW DISPLAY:
@@ -387,6 +446,11 @@ ACCOUNT SELECTION LIST (PICKLIST)':
     >> You must click 'STORE LIST CHANGES' before you click simulate or exit the config screen. If you do not do this
        then your selection changes could be lost! However, you will be asked if you want to store the changes first.
 
+    KEY:
+         "I" or "E" within the row signifies an Income or Expense category.
+         "XNW" signifies that this account has the 'include in net worth' flag un-ticked (i.e. eXclude from net worth)
+               (only enabled from MD2024.3(5204) onwards)
+
 >> DON'T FORGET TO 'SAVE ALL SETTINGS'! (for convenience, this also stores your current account selection list too) <<
 
 <<Simulate Row>> - As you make changes, the value calculation is not recalculated. Once you have your list created,
@@ -404,10 +468,27 @@ FILTERS FOR LIST CHOICES:
   - Inactive Securities: You can flag a security as inactive by un-ticking the 'Show on summary page' box on a security
                        in the MD/Tools/Securities menu. This will then treat this security in ALL investment accounts
                        as INACTIVE.
+    >> ONLY this filter setting is 'sticky' and is saved against the row's settings.
 
-- List Choices - you can filter the pick list by multiple criteria.
-	       - other filters include filtering out zero values, and by what has been selected.
+  ** there is an extra / special option in this filter dropdown list: 'Inactive Only'. This only shows you inactive
+     accounts in the picklist. This selection is not 'sticky' and not saved between row selections. If you save settings
+     with this set, then the saved option is downgraded to 'Include Inactive'... (debugging purposes)...
 
+- List Choices - you can filter the pick list by multiple criteria:
+           - By account type(s). There are various options/combinations
+             >> the default is 'All Accounts (no categories)'
+           - Filter out Zeros Inactive:     hides inactive accounts with a zero balance
+           - Filter out Zeros Active:       hides active accounts with a zero balance
+           - Only show Parents:             only shows parent accounts, hiding all sub-accounts; useful for autosum
+           - Only Show XNW accounts:        only shows accounts marked as exclude from net worth calculations in MD
+           - Only Show Selected:            only show selected/marked accounts in the list
+           - Filter Include Selected:       despite all filters, always show marked/selected accounts in the list
+       >> these filters are NOT 'sticky' and are not saved against the row's settings. Please reset when you change
+          rows according to what you want to see. These filters have no relevance to the actual calculations.
+
+>> By default, the 'Filter Include Selected' and 'Only Show Selected' options will be ticked when you select any row.
+   this helps you instantly see what accounts you have previous marked/selected and saved. On new rows, these two
+   settings will not be selected which means that you will see 'All Accounts (no categories)'.
 ------------------------------------------------------------------------------------------------------------------------
 
 OPTIONS MENU:
@@ -430,7 +511,7 @@ OPTIONS MENU:
                             - reminders,  cost basis / ur-gains / capital gains, or when using 'balance asof dates'.
                             ... as such, the 'normal' transaction date will be used.
   - Display underline dots: Display 'underline' dots that fill the blank space between row names and values
-  - Disable Warning Icon: Removes Warning Icon from the Widget
+  - Disable gray text info: Prevents extra little gray info text from appearing... (eg "(for) appended to the row name")
 
 
 BACKUP/RESTORE:
@@ -443,6 +524,7 @@ BACKUP/RESTORE:
           CMD-SHIFT-L will display debugging information about the internal lastResultsTable (not for 'normal' users)...
           CMD-SHIFT-W will display current warnings (same as clicking the warnings icon)...
           CMD-SHIFT-G allows you to edit the pre-defined/used GroupID Filter(s)... Click +/- cell (on right) to add/del
+          CMD-SHIFT-N will display Moneydance's pre-defined Net Worth calculations (builds MD2024.3(5204) onwards)
 
 
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DETAILS SECTION <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -549,24 +631,29 @@ NOTE: Click the little "<" icon to the right of the row name field to view/inser
 
 - ROW NAME Configuration Options:
   - You can embed the following text (lowercase) in the Row Name field to configure the row / total (value) as follows:
-    <#brn>   = Forces row name to be blank/empty
-    <#jr>    = Row name justify: right
-    <#jc>    = Row name justify: center
-    <#cre>   = Row name colour:  red
-    <#cbl>   = Row name colour:  blue
-    <#cgr>   = Row name colour:  light grey
-    <#fbo>   = Row name font:    bold
-    <#fit>   = Row name font:    italics
-    <#fun>   = Row name font:    underline
-    <#nud>   = No special underline dots...
-    <#fud>   = Force special underline dots...
-    <#bzv>   = Forces any total (value) to appear blank when zero
-    <#cvre>  = Value colour:  red
-    <#cvbl>  = Value colour:  blue
-    <#cvgr>  = Value colour:  light grey
-    <#fvbo>  = Value font:    bold
-    <#fvit>  = Value font:    italics
-    <#fvun>  = Value font:    underline
+    <#brn>      = Forces row name to be blank/empty
+    <#jr>       = Row name justify: right
+    <#jc>       = Row name justify: center
+    <#cre>      = Row name colour:  red
+    <#cbl>      = Row name colour:  blue
+    <#cgr>      = Row name colour:  light grey
+    <#fbo>      = Row name font:    bold
+    <#fit>      = Row name font:    italics
+    <#fun>      = Row name font:    underline
+    <#f+>       = Row name font:    10% larger (to match other MD widget's total balance value size)
+    <#cvre>     = Value colour:     red
+    <#cvbl>     = Value colour:     blue
+    <#cvgr>     = Value colour:     light grey
+    <#cvde>     = Value colour:     default foreground
+    <#fvbo>     = Value font:       bold
+    <#fvit>     = Value font:       italics
+    <#fvun>     = Value font:       underline
+    <#fv+>      = Value font:       10% larger (to match other MD widget's total balance value size)
+    <#nud>      = No special underline dots...
+    <#fud>      = Force special underline dots...
+    <#bzv>      = Forces any total (value) to appear blank when zero
+    <#cmd:xxx>  = Row name colour:  replace 'xxx' with an internal Moneydance colour name - e.g. 'defaultTextForeground'
+    <#cvmd:xxx> = Value colour:     replace 'xxx' with an internal Moneydance colour name - e.g. 'defaultTextForeground'
 
   - You can embed the following to insert variable text into the Row Name field:
     <##rn>    = insert the row number
@@ -590,8 +677,41 @@ NOTE: Click the little "<" icon to the right of the row name field to view/inser
                                                     default MD foreground color(black-ish): #4a4a4a
                                         Refer: https://www.rapidtables.com/web/color/RGB_Color.html
 
-   HTML EXAMPLE:
+   HTML EXAMPLES:
    <#html><b><font color=#0000ff>Expenses </font></b>Last month <small><u><font color=#bb0000>OVERDUE</font></u></small>
+   <#html><font size="5">Net Worth</font>
+
+   ... NOTE: row name length checking is not performed on html formatted rows. If the row name ends up too long
+             (i.e. too wide on the summary screen), then you'll have to manually edit/tweak your html coding...
+
+  NOTE: You may see little gray words in (brackets) appended to each row name. These provide extra information about the
+        configuration of that row. These can appear when things other than straightforward accounts have been selected.
+        When debug is turned on, these are more descriptive. To disable use the menu option: 'Disable gray text info'...
+
+        (currencyID) - when not using the base currency - e.g. '(USD)'
+        (securities) - when including security balances
+        (avg/by: n)  - when using average by feature
+        (balasof)    - when using balance asof date. With debug '(balasof: <date>)'
+        (rems)       - when including reminders. With debug '(incl. reminders asof: <date>)'
+        (cb)         - when showing the cost basis of securities. With debug '(costbasis)'
+        (cb-c)       - when showing the cost basis including cash balances. With debug '(costbasis incl. cash)'
+        (urg)        - when showing security's unrealised gains. With debug '(u/r gains)'
+        (cg)         - when calculating capital gains. With debug '(capital gains - simple)'
+        (cg-s)       - when calculating capital gains 'short-term holding'. With debug '(capital gains - short)'
+        (cg-l)       - when calculating capital gains 'long-term holding'. With debug '(capital gains - long)'
+        (rmc)        - when using Row maths calculation. With debug '(rmc: 'x')' - x shows the detail of the RMC
+        (pum)        - when using Post UOR maths calculation. With debug '(pum: 'x')' - x shows the detail of the PUM
+        (for)        - when using a formula
+        (fda)        - when using Format Display Adjust
+        (txd)        - when tax dates are being used
+        (uor: n)     - when using another row; where n = the other row
+        (uuid: x)    - with debug enabled... shows the internal UUID reference.
+
+- CREATING A HEADING:
+  Create a new row where you want the heading to appear, and simply put the heading text you want in the row name field.
+  Then using the arrow selector next to the field select / insert the code <#bzv>. Do not otherwise configure the row.
+  As long as you have not selected any accounts, or configuration, you will get just a heading.
+  You can optionally add other field codes, like bold, italics, underline etc, these codes are accumulative.
 
 
 USING CATEGORIES (DATE RANGE)
@@ -677,20 +797,26 @@ DETAILS ON HOW CALCULATIONS OF BALANCES OCCURS:
                       functions that operate on the row's calculated result (e.g. average by, RMC, UOR, PUM, FOR, FDA)..
 
 
->> ROUNDING:
-Rounding is only performed on the displayed result when 'Hide Decimal Places' is selected. The internal number
-is never rounded, and full decimal precision is always preserved internally for onward UOR consumption.
-- Rounding of Java Double / Python float numbers can be problematic. Custom Balances calls Jython's round() method. This
-  internally uses Java's BigDecimal class with the RoundingMode.HALF_UP mode (e.g. 0.5 should become 1.0).
-  NOTE: you won't always get what you expect. If you are interested - refer:
-        https://docs.python.org/2.7/library/functions.html#round
-        https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/RoundingMode.html#HALF_UP
+>> ROUNDING ISSUES:
+
+1. The approach taken when totalling balances per accounts is to always convert that account's balance to the target
+   currency before adding it into the total (if sub accounts in the same local currency were totalled before conversion,
+   this could cause slight rounding differences).
+
+2. Rounding is only performed on the displayed result when 'Hide Decimal Places' is selected. The internal number
+   is never rounded, and full decimal precision is always preserved internally for onward UOR consumption.
+   - Rounding of Java Double / Python float numbers can be problematic. Custom Balances calls Jython's round() method. This
+     internally uses Java's code with RoundingMode.HALF_UP mode (e.g. 0.5 should become 1.0).
+     NOTE: you won't always get what you expect. If you are interested - refer:
+           https://docs.python.org/2.7/library/functions.html#round
+           https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/RoundingMode.html#HALF_UP
 
 
 >> PARALLEL BALANCES:
     - Selecting any of the following options will trigger 'parallel balance operations' for that row, for all accounts
       ... used by that row: Balance asof date; Income/Expense date range; Cost Basis / Unrealised Gains / Capital Gains;
-      ...  including Reminders...
+      ... including Reminders...
+      ... enabling 'apply net worth rules' for a row...
 
     - The sequence of harvesting data / calculating balances for rows using parallel balances is as follows:
         # 1. per row, gather all selected accounts along with all child/sub accounts...
@@ -711,9 +837,35 @@ is never rounded, and full decimal precision is always preserved internally for 
                Balance asof dates & I/E date ranges harvest transactions...
                Future reminders are forward calculated...
                Cost Basis / Unrealised / Capital Gains sweep Buy/Sell txns... (possibly twice for Bal vs Current Bal)
-               Remaining real balances, sweep accounts and uses the Account's real stored balance(s)
+               Remaining 'real balances', sweep accounts and uses the Account's real stored balance(s)
+               ('apply net worth rules' triggers the sweep for 'real balances' so that recursive balances can be
+               intercepted. This is why enabling this option can slow down the calculation)
                ALL THIS CAN POTENTIALLY BE CPU CONSUMING. Do not use the widget for heavy reporting purposes!
                No harm will be caused, but these rows may take a few seconds to calculate / appear....
+
+
+
+NOTES ON NET WORTH FEATURES:
+
+To produce a net worth you can use the following methods:
+1. use the nw() formula (and its variants) to replicate Moneydance's default net worth calculation. With this option,
+   you do not need to select any accounts, or enable the 'apply net worth rules' setting.
+2. Select all account parents, enable auto sum, enable the 'apply net worth rules' setting (assuming you have set XNW
+   flags on accounts that should always be excluded from net worth).
+3. Select all account parents except any that should not be included, enable auto sum, don't bother with
+   'apply net worth rules'
+4. Same as option(s) 2 & 3, but select both parents and sub-accounts, and turn off auto sum.
+>> all the above options should result in the same net worth value...
+
+Net Worth features are only properly enabled when MD2024.3(5204) or later is detected. This is because net worth
+features inside Moneydance were not fully enabled / aligned prior to this.
+   - previously inactive accounts were excluded, now they are included by Moneydance
+   - previously there was a hidden flag to exclude single accounts from NW, now this flag is exposed in the GUI and also
+     children of excluded parent accounts are also excluded
+    - a bug was fixed whereby any calculation using a rate/price for today / future date now always uses current price,
+     whereas previously there was a mixed approach to using the last dated price vs current price..
+  >> thus if you enable NW features in your custom balance rows, then you will probably see different results if you
+     attempt to look at these rows in prior Moneydance builds
 
 
 NOTES ON COST BASIS / CAPITAL GAINS:
@@ -788,10 +940,53 @@ in both short-term and long-term pools (however this data is only shown in conso
 >> MD can report this same data in the Capital Gains report when the 'Show double-category average cost data' option is
    enabled. However, this does not affect the cost basis or gains calculation, and is incorrect when the security has
    stock splits....
+
+
 ------------------------------------------------------------------------------------------------------------------------
+KNOWN MONEYDANCE (INTERNAL) COLOUR NAMES:
+
+For use with the <#cmd:xxx> and <#cvmd:xxx> tags - these may or may not work; 'fg' typically means foreground, so these
+will most likely be 'better'. 'defaultTextForeground' is the default color; you may need to experiment:
+
+'defaultBackground', 'defaultTextForeground', 'secondaryTextFG', 'tertiaryTextFG', 'registerBG1', 'registerBG2',
+'registerSelectedBG', 'registerUnfocusedSelectedBG', 'registerSelectedFG', 'registerUnconfirmedIconFG', 'registerTextFG'
+'listBackground', 'listSelectionBG', 'registerGrid', 'futureTxnBG', 'futureTxn2BG', 'futureTxnIndicator', 'headerBG',
+'reminderHomeInnerLine', 'hudBG', 'hudBorderColor', 'hudFG', 'filterBarBG', 'filterBarBtnBG', 'filterBarFG',
+'filterBarBorderPaint', 'filterBarSelBG', 'filterBarSelFG', 'headerBG1', 'headerBG2', 'graphBG1', 'graphBG2',
+'scrollThumb', 'headerFG', 'headerBorder', 'homepageSectionBG', 'homePageAltBG', 'mainDivider', 'positiveBalFG',
+'negativeBalFG', 'incomeIconTint', 'expenseIconTint', 'homePageBG', 'homePageFG', 'dashboardFG', 'calEventBG',
+'calPastEventBG', 'hudBG1', 'hudBG2', 'selectedRowGradient1', 'selectedRowGradient2', 'selectedRowUFGradient1',
+'selectedRowUFGradient2', 'tableHeaderBG', 'popoverBG', 'popoverTriangleBG', 'popoverBorder', 'mainPanelBorderColor',
+'budgetHealthyColor', 'budgetAcceptableColor', 'budgetAlertColor', 'budgetGraphWarning', 'errorMessageForeground',
+'reportBlueFG', 'reportRedFG', 'sidebarBackground', 'sidebarSecondaryTextFG', 'sidebarSelectedBG', 'sidebarUFSelectedBG'
+'sidebarHeader', 'sidebarPositiveBalanceFG', 'sidebarNegativeBalanceFG', 'sidebarSelectedFG', 'homeIconTint',
+'graphIconTint', 'accountIconTint', 'remindersIconTint', 'reportIconTint', 'budgetIconTint', 'graphData1', 'graphData2',
+'graphData3', 'graphData4', 'graphData5', 'graphData6', 'graphData7', 'graphData8', 'graphData9', 'graphData10',
+'graphData11', 'graphData12', 'graphData13', 'graphData14', 'graphData15', 'graphData16', 'graphData17', 'graphData18',
+'graphData19', 'graphData20', 'graphData21', 'graphData22', 'graphData23'
+
+------------------------------------------------------------------------------------------------------------------------
+HISTORICAL UPGRADE NOTES:
+If you have been using more recent PREVIEW builds (since 1038 / November 2023) then you may have configured
+'Final Maths Calculation' (FMC), and also come across 'absorbed into other UORs' and also 'not absorbed'. These settings
+have gone, and were migrated into:
+a) 'Post UOR maths calculation' (PUM) (replacing FMC absorbed), or...
+b) 'Format Display Adjust' (FDA)      (replacing FMC non-absorbed).
+
+DEFINITION: 'absorbed' in this context means that the math takes place before being rolled upwards into other
+UORs that refer to this row... I.e. 'non-absorbed' means the impact of the maths stays on this row alone.
+
+There is a new exciting Formula (FOR) capability from build 1046+. This in effect can replace RMC, UOR, PUM. You can
+continue to use these, or use the new superior formula capability. You can actually combine all these, but this is
+NOT RECOMMENDED as it's duplicative and confusing to understand. RECOMMENDATION: if you want to use formulas, then
+manually update your settings to only use formula. Average by is not affected by this change. FDA and *100 can remain,
+or be replaced by formula - your choice.
+
+Formula gives you the ability to add multiple rows together, or perhaps subtract one row from another (for example).
+These types of calculations are quite tricky to perform using the 'old' UOR maths.
 
 
-
+------------------------------------------------------------------------------------------------------------------------
 TECHNICAL/HISTORICAL NOTES:
 - My original concept was to add balances to target zero. Thus a positive number is 'good', a negative is 'bad'
 - The idea was that you net cash and debt to get back to zero every month (but you can do so much more than this now)!

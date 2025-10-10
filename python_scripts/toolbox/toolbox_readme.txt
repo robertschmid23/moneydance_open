@@ -1,6 +1,6 @@
 The Infinite Kind (Moneydance) - Co-authored by Stuart Beesley in collaboration with Moneydance as a support tool
 
-Original Author: Stuart Beesley - StuWareSoftSystems (2020-2024 - originally my 'lockdown' project ~2000 coding hours)
+Original Author: Stuart Beesley - StuWareSoftSystems (2020-2025 - originally my 'lockdown' project ~2000 coding hours)
 Credit: Derek Kent(23) for his extensive testing and many hours on this project!
         Also thanks to Kevin(N), Dan T Davis, and dwg for their testing, input and OFX Bank help/input.....
 
@@ -149,12 +149,17 @@ Read-Only Mode (Default at launch) - Use ALT-M to toggle between Read-Only and U
         - DIAG - Show Securities with 'invalid' LOT Matching (cause of LOT matching popup window)
         - DIAG - Produce a quick validation report on Currency rates / Security prices / dates
         - DIAG - Produce a quick report on all Currency rates / Security prices / dates
+        - DIAG - Validate dated price record exists on security split date(s)
+        - DIAG - List all security split data (also performs validation)
         - DIAG - Diagnose currency / security's current price hidden 'price_date' field. If warnings, then go to FIX below
 
     - MENU: Accounts & Categories tools
         - View Check number settings
         - DIAG - View Categories with zero balance. You can also inactivate using Update mode.
+        - DIAG - View all the possible system generated Net Worth calculations... (MD2024.3(5204) onwards)
         - DIAG - View Accounts' shouldBeIncludedInNetWorth() settings...
+        - DIAG - Show all inactive accounts that are included in Net Worth calculations (MD2024.3 onwards)
+        - DIAG - Validate Account 'start dates'... (based upon earliest transaction date)
         - DIAG - Produce report of Accounts and bank/account number information (Useful for legacy / Will making)
 
     - MENU: Transactions tools
@@ -208,6 +213,8 @@ ALT-M - Update Mode (** NOTE: Some menu items will disable if currency / securit
         - FIX - Set/Change Default Moneydance FONTS                                                                     >> 2021.1 onwards
         - FIX - Delete Custom Theme file
         - FIX - Delete Orphaned/Outdated Extensions (from config.dict and .mxt files)
+        - FIX - RESET all inbuilt report/graph parameters to defaults (does not touch Memorized Reports)
+        - FIX - DELETE all memorized reports/graphs (exactly as it says!)
 
     - MENU: Online (OFX) Banking Tools:
         - Forget OFX Banking Import Link (so it asks which account when importing ofx files) (remove_ofx_account_bindings.py) (MD versions < 2022)
@@ -257,7 +264,9 @@ ALT-M - Update Mode (** NOTE: Some menu items will disable if currency / securit
     - MENU: Accounts & Categories tools
         - FIX - Add alternative account numbers for 'Accounts and bank/account number' report (above)"
         - FIX - Inactivate all Categories with Zero Balance
-        - FIX - Edit an Account's shouldBeIncludedInNetWorth() setting
+        - FIX - Edit an Account's shouldBeIncludedInNetWorth() setting. (disabled for builds MD2024.3 onwards, as builtin functionality)
+        - FIX - Exclude all inactive accounts from Net Worth calculations (MD2024.3 onwards)
+        - FIX - Fix Account 'start dates'... (based upon earliest transaction date)
         - FIX - FORCE change an Account's Type (use with care. Does not update any transactions) (set_account_type.py)
         - FIX - FORCE change an Account's / Category's Currency (use with care. Does not update any transactions) (force_change_account_currency.py)
         - FIX - FORCE change ALL Accounts' / Categories' currencies (use with care. Does not update any transactions) (force_change_all_currencies.py)

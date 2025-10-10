@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-# toolbox_extra_code.py build: 1002 - Dec 2023 - Stuart Beesley StuWareSoftSystems
+# toolbox_extra_code.py build: 1003 - Jan 2025 - Stuart Beesley StuWareSoftSystems
 
 # To avoid the dreaded issue below, moving some code here....:
 # java.lang.RuntimeException: java.lang.RuntimeException: For unknown reason, too large method code couldn't be resolved
@@ -10,10 +10,11 @@
 #               Rebuilt all the encrypt/decrypt file to/from Dataset/Sync... Now can access Dropbox Cloud Sync files online too...
 # build: 1001 - Show encryption details report added - advanced_show_encryption_keys() ...
 # build: 1002 - Relocated advanced_clone_dataset() into here.
+# build: 1003 - Added delete all reports/graphs, and reset all inbuilt report/graph parameters to defaults...
 ###############################################################################
 # MIT License
 #
-# Copyright (c) 2020-2024 Stuart Beesley - StuWareSoftSystems & Infinite Kind (Moneydance)
+# Copyright (c) 2020-2025 Stuart Beesley - StuWareSoftSystems & Infinite Kind (Moneydance)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -40,27 +41,29 @@
 global os
 
 # Moneydance definitions
-global AccountBookWrapper, AccountBook, Common, GridC, MDIOUtils, StringUtils, DropboxSyncConfigurer
-global DateUtil, AccountBookUtil, AccountUtil, AcctFilter, ParentTxn, CurrencySnapshot
-global TxnSearch
+global Account, AccountBookWrapper, AccountBook, Common, GridC, MDIOUtils, StringUtils, DropboxSyncConfigurer
+global DateUtil, AccountBookUtil, AccountUtil, AcctFilter, ParentTxn, CurrencySnapshot, CurrencyUtil
+global TxnSearch, ReportSpec, MoneydanceSyncableItem, CurrencyType
 global CostCalculation, CustomURLStreamHandlerFactory, OnlineTxnMerger, OnlineUpdateTxnsWindow, MoneybotURLStreamHandlerFactory
-global OFXConnection, PlaidConnection, StreamTable, Syncer, DownloadedTxnsView
+global OFXConnection, PlaidConnection, StreamTable, Syncer, DownloadedTxnsView, SplitTxn
 
 # Java definitions
+global SwingUtilities
 global File, FileInputStream, FileOutputStream, IOException, JOptionPane, System, String, Boolean, FilenameFilter
 global JList, ListSelectionModel, DefaultListCellRenderer, DefaultListSelectionModel, Color, Desktop
 global BorderFactory, JSeparator, DefaultComboBoxModel, SwingWorker, JPanel, GridLayout, JLabel, GridBagLayout, BorderLayout
 global Paths, Files, StandardCopyOption, Charset
 global AbstractAction, UUID
-global JTextField, JCheckBox, ArrayList
+global JTextField, JCheckBox, ArrayList, HashMap, Collections
 
 # My definitions
 global toolbox_frame_
 global MD_REF, GlobalVars, debug, myPrint, QuickAbortThisScriptException
-global myPopupInformationBox, getFileFromFileChooser, get_home_dir, myPopupAskQuestion
+global myPopupInformationBox, myPopupAskForInput, getFileFromFileChooser, get_home_dir, myPopupAskQuestion
 global invokeMethodByReflection, getFieldByReflection, setFieldByReflection
 global MyPopUpDialogBox, logToolboxUpdates, file_chooser_wrapper, dump_sys_error_to_md_console_and_errorlog
-global get_sync_folder, pad, rpad, cpad, setDisplayStatus, doesUserAcceptDisclaimer, get_time_stamp_as_nice_text
+global get_sync_folder, pad, rpad, cpad, padTruncateWithDots
+global setDisplayStatus, doesUserAcceptDisclaimer, get_time_stamp_as_nice_text
 global MyJScrollPaneForJOptionPane, getMDIcon, QuickJFrame
 global genericSwingEDTRunner, genericThreadRunner
 global getColorBlue, getColorRed, getColorDarkGreen, MoneybotURLDebug
@@ -68,7 +71,11 @@ global isKotlinCompiledBuild, convertBufferedSourceToInputStream
 global confirm_backup_confirm_disclaimer, backup_local_storage_settings, getNetSyncKeys, play_the_money_sound
 global ManuallyCloseAndReloadDataset, perform_qer_quote_loader_check, safeStr, convertStrippedIntDateFormattedText
 global count_database_objects, SyncerDebug, calculateMoneydanceDatasetSize, removeEmptyDirs
-global isAppDebugEnabledBuild, isKotlinCompiledBuildAll, isMDPlusEnabledBuild
+global isAppDebugEnabledBuild, isKotlinCompiledBuildAll, isMDPlusEnabledBuild, isMDPlusGetPlaidClientEnabledBuild
+global isNetWorthUpgradedBuild, isPriceDisplayDecimalsBuild
+global MyAcctFilter, StoreAccountList
+global getMemorizedReports, safeInvertRate
+global CuriousViewInternalSettingsButtonAction, check_if_key_data_string_valid, check_if_key_string_valid
 
 # New definitions
 from com.moneydance.apps.md.controller.sync import AbstractSyncFolder, MDSyncCipher
@@ -80,6 +87,10 @@ from javax.swing import DefaultListModel
 from java.lang import InterruptedException
 from java.util.concurrent import CancellationException
 from java.io import BufferedOutputStream
+from java.util import LinkedHashMap
+
+from bisect import bisect_left
+from fractions import Fraction
 
 try:
     if GlobalVars.EXTRA_CODE_INITIALISED: raise QuickAbortThisScriptException
@@ -831,7 +842,6 @@ try:
             sync_pbe_salt_hex = StringUtils.encodeHex(getFieldByReflection(MDSyncCipher, "pbe_salt"), False)
             sync_aes_iv_hex = StringUtils.encodeHex(getFieldByReflection(MDSyncCipher, "aes_iv"), False)
 
-
             syncFolder = wrapper.getSyncFolder()
             if syncFolder is not None:
                 syncKeyHex = StringUtils.encodeHex(getFieldByReflection(MDSyncCipher.getSyncCipher(wrapper.getSyncEncryptionPassword()), "secretKey").getEncoded(), False)
@@ -1185,6 +1195,14 @@ try:
                 if newBook is None: raise Exception("ERROR: 'AccountBook' is None")
                 output += "Successfully obtained Clone's AccountBook reference\n"
 
+                if MD_REF.getBuild() > 5153:  # MD2024.2 - the dataset loading methods were tweaked..!
+                    newBook.setFinishedInitialLoad(True)
+                    newBook.performPostLoadVerification()
+
+                    newRoot = newBook.getRootAccountNullable()
+                    if newRoot is None: raise Exception("ERROR: 'root' is None")
+                    output += "Successfully obtained Clone's (nullable) 'root' reference\n"
+
                 newBookSyncer = newBook.getSyncer()
                 if newBookSyncer is None: raise Exception("ERROR: cloned dataset's 'Syncer' is None")
                 output += "Clone's 'Syncer' is running (%s)\n" %(newBookSyncer)
@@ -1456,7 +1474,7 @@ try:
                             MoneybotURLStreamHandlerFactory.DEBUG,                                                      # noqa
                             OFXConnection.DEBUG_MESSAGES,                                                               # noqa
                             OnlineTxnMerger.DEBUG,                                                                      # noqa
-                            "n/a" if (not isMDPlusEnabledBuild()) else PlaidConnection.DEBUG))                          # noqa
+                            "n/a" if (not isMDPlusGetPlaidClientEnabledBuild()) else PlaidConnection.DEBUG))            # noqa
             else:
                 askStr = ("main.DEBUG                             currently set to: %s\n" 
                           "System.getProperty('%s') currently set to: %s\n"
@@ -1494,7 +1512,7 @@ try:
             MoneybotURLStreamHandlerFactory.DEBUG = newDebugSetting
             OFXConnection.DEBUG_MESSAGES = newDebugSetting
             OnlineTxnMerger.DEBUG = newDebugSetting
-            if isMDPlusEnabledBuild(): PlaidConnection.DEBUG = newDebugSetting
+            if isMDPlusGetPlaidClientEnabledBuild(): PlaidConnection.DEBUG = newDebugSetting
 
         txt = "All Moneydance internal debug modes turned %s" %(toggleText)
 
@@ -1564,6 +1582,968 @@ try:
         txt = "Moneydance internal debug settings %s turned %s" %(selectedKey, not currentSetting)
         setDisplayStatus(txt, "B")
         myPopupInformationBox(toolbox_frame_, txt, "TOGGLE MONEYDANCE INTERNAL OTHER DEBUG", JOptionPane.WARNING_MESSAGE)
+
+
+    def advanced_options_edit_parameter_keys():
+        if MD_REF.getCurrentAccountBook() is None: return
+
+        if not myPopupAskQuestion(toolbox_frame_,"EDIT OBJs MODE","DANGER - ARE YOU SURE YOU WANT TO VISIT THIS FUNCTION?", theMessageType=JOptionPane.ERROR_MESSAGE):
+            txt = "Edit Obj Mode - User declined to proceed - aborting.."
+            setDisplayStatus(txt, "R")
+            return
+
+        objSelecter = CuriousViewInternalSettingsButtonAction(lOFX=False, EDIT_MODE=True)
+        theObject = objSelecter.actionPerformed("")  # type: list
+        del objSelecter
+
+        if theObject is None or len(theObject)!= 1:
+            # txt = "ADVANCED Edit Obj Mode - No Object selected/found - aborting.."
+            # setDisplayStatus(txt, "R")
+            return
+
+        theObject = theObject[0]            # type: MoneydanceSyncableItem
+
+        _ADVANCED_KEYADD          = 0
+        _ADVANCED_KEYCHG          = 1
+        _ADVANCED_KEYDEL          = 2
+        _ADVANCED_RECORDDELETE    = 3
+
+        what = [
+            "Object ADD    Parameter Key (and data)",
+            "Object CHANGE Parameter Key's Data",
+            "Object DELETE Parameter Key (and it's data)",
+            "DELETE OBJECT - NOT RECOMMENDED!"
+        ]
+
+        while True:
+
+            lAdd = lChg = lDel = lDeleteRecord = False
+
+            selectedWhat = JOptionPane.showInputDialog(toolbox_frame_,
+                                                       "Select the option for the modification (on %s)?" %(theObject),
+                                                       "ADVANCED",
+                                                       JOptionPane.WARNING_MESSAGE,
+                                                       getMDIcon(None),
+                                                       what,
+                                                       None)
+
+            if not selectedWhat:
+                txt = "ADVANCED - Exiting"
+                setDisplayStatus(txt, "B")
+                return
+
+            if selectedWhat == what[_ADVANCED_KEYADD]:          lAdd = True
+            if selectedWhat == what[_ADVANCED_KEYCHG]:          lChg = True
+            if selectedWhat == what[_ADVANCED_KEYDEL]:          lDel = True
+            if selectedWhat == what[_ADVANCED_RECORDDELETE]:    lDeleteRecord = True
+
+            text = ""
+            if lChg:            text = "ADD"
+            if lChg:            text = "CHANGE"
+            if lDel:            text = "DELETE"
+            if lDeleteRecord:   text = "DELETE OBJECT"
+
+            if lAdd:
+                addKey = myPopupAskForInput(toolbox_frame_,
+                                            "ADD PARAMETER TO %s" % (theObject),
+                                            "PARAMETER:",
+                                            "Carefully enter the name of the Parameter you want to add (cAseMaTTers!) - STRINGS ONLY:",
+                                            "",
+                                            False,
+                                            JOptionPane.WARNING_MESSAGE)
+
+                if not addKey or len(addKey.strip()) < 1: continue
+                addKey = addKey.strip()
+
+                if not check_if_key_string_valid(addKey):
+                    myPopupInformationBox(toolbox_frame_, "ERROR: Parameter %s is NOT valid!" % addKey, "ADD TO %s" %(theObject), JOptionPane.ERROR_MESSAGE)
+                    continue    # back to ADVANCED Options menu
+
+                testKeyExists = theObject.getParameter(addKey,None)                                                     # noqa
+
+                if testKeyExists:
+                    myPopupInformationBox(toolbox_frame_, "ERROR: Parameter %s already exists - cannot add - aborting..!" %(addKey), "ADD TO %s" %(theObject), JOptionPane.ERROR_MESSAGE)
+                    continue    # back to ADVANCED Options menu
+
+                addValue = myPopupAskForInput(toolbox_frame_,
+                                              "ADD PARAMETER VALUE TO %s" %(theObject),
+                                              "VALUE:",
+                                              "Carefully enter the value you want to add (STRINGS ONLY! CaSE MattERS):",
+                                              "",
+                                              False,
+                                              JOptionPane.WARNING_MESSAGE)
+
+                if not addValue or len(addValue.strip()) <1: continue
+                addValue = addValue.strip()
+
+                if not check_if_key_data_string_valid(addValue):
+                    myPopupInformationBox(toolbox_frame_, "ERROR: Parameter value %s is NOT valid!" %(addValue), "ADD TO %s" %(theObject), JOptionPane.ERROR_MESSAGE)
+                    continue    # back to ADVANCED Options menu
+
+                if confirm_backup_confirm_disclaimer(toolbox_frame_, "ADVANCED OPTIONS", "ADD PARAMETER VALUE TO %s" %(theObject)):
+
+                    theObject.setParameter(addKey,addValue)                                                             # noqa
+                    if isinstance(theObject, SplitTxn):                                                                 # noqa
+                        theObject.getParentTxn().syncItem()                                                             # noqa
+                    else:
+                        theObject.syncItem()                                                                            # noqa
+                    txt = "Parameter: %s Value: %s added to %s @@" %(addKey,addValue,theObject)
+                    setDisplayStatus(txt, "R"); myPrint("B", txt)
+                    logToolboxUpdates("advanced_options_edit_parameter_keys", txt)
+                    play_the_money_sound()
+                    myPopupInformationBox(toolbox_frame_,
+                                          "SUCCESS: Key %s added to %s!" % (addKey,theObject),
+                                          "ADD TO %s" %(theObject),
+                                          JOptionPane.WARNING_MESSAGE)
+                    continue
+
+                continue
+
+            # DELETE OBJECT  :-<
+            if lDeleteRecord:
+
+                output =  "%s PLEASE REVIEW PARAMETER & VALUE BEFORE DELETING OBJECT\n" %(theObject)
+                output += " --------------------------------------------------------\n\n"
+
+                if isinstance(theObject, SplitTxn):
+                    txt = theObject.getParentTxn().getSyncInfo().toMultilineHumanReadableString()                       # noqa
+                else:
+                    txt = theObject.getSyncInfo().toMultilineHumanReadableString()                                      # noqa
+
+                output += "\n%s\n" %(txt)
+
+                output += "\n<END>"
+                if isinstance(theObject, SplitTxn):
+                    jif = QuickJFrame("REVIEW THE SPLIT TXN's DATA BEFORE DELETION (OF THE SPLIT)", output, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
+                elif isinstance(theObject, ParentTxn):
+                    jif = QuickJFrame("REVIEW THE PARENT'S TXN DATA BEFORE DELETION (OF THE WHOLE PARENT TXN)", output, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
+                else:
+                    jif = QuickJFrame("REVIEW THE OBJECT's DATA BEFORE DELETION", output, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
+
+                if confirm_backup_confirm_disclaimer(jif, "DELETE OBJECT", "DELETE OBJECT %s" %(theObject)):
+
+                    if isinstance(theObject, SplitTxn):                                                                 # noqa
+                        # This will delete the split only; thus we also must sync the parent
+                        theObject.deleteItem()                                                                          # noqa
+                        theObject.getParentTxn().syncItem()                                                             # noqa
+                    else:
+                        theObject.deleteItem()                                                                          # noqa
+
+                    txt = "ADVANCED OPTIONS: OBJECT %s DELETED @@" %(theObject)
+                    setDisplayStatus(txt, "R"); myPrint("B", txt)
+                    logToolboxUpdates("advanced_options_edit_parameter_keys", txt)
+
+                    play_the_money_sound()
+                    myPopupInformationBox(jif,
+                                          "SUCCESS: OBJECT %s DELETED" %(theObject),
+                                          "DELETE OBJECT",
+                                          JOptionPane.ERROR_MESSAGE)
+                    return
+
+                continue
+
+            # OK, so we are changing or deleting
+            if lChg or lDel:
+
+                paramKeys = sorted(theObject.getParameterKeys())                                                        # noqa
+                selectedKey = JOptionPane.showInputDialog(toolbox_frame_,
+                                                          "Select the %s Parameter you want to %s" % (theObject,text),
+                                                          "ADVANCED OPTIONS",
+                                                          JOptionPane.WARNING_MESSAGE,
+                                                          getMDIcon(None),
+                                                          paramKeys,
+                                                          None)
+                if not selectedKey: continue
+
+                value = theObject.getParameter(selectedKey, None)                                                       # noqa
+
+                output =  "%s PLEASE REVIEW PARAMETER & VALUE BEFORE MAKING CHANGES\n" %(theObject)
+                output += " -----------------------------------------------\n\n"
+
+                output += "\n@@ This '%s' key can be changed/deleted by this script @@\n" %(selectedKey)
+
+                output += "\n%s %s\n" %(pad("%s PARAMETER:"%(theObject), 25), selectedKey)
+                output += "\n%s %s\n" %(pad("Type:",25), type(value))
+                output += "\n%s %s\n" %(pad("Value:",25), value)
+
+                output += "\n<END>"
+                jif = QuickJFrame("REVIEW THE KEY BEFORE CHANGES to %s" %(theObject), output, lAutoSize=True, lWrapText=False, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB).show_the_frame()
+
+                chgValue = None
+
+                if lChg:
+                    chgValue = myPopupAskForInput(jif,
+                                                  "CHANGE PARAMETER VALUE IN %s" %(theObject),
+                                                  "VALUE:",
+                                                  "Carefully enter the new value (STRINGS ONLY! CaSE MattERS):",
+                                                  value,
+                                                  False,
+                                                  JOptionPane.WARNING_MESSAGE)
+
+                    if not chgValue or len(chgValue.strip()) <1 or chgValue == value: continue
+                    chgValue = chgValue.strip()
+
+                    if not check_if_key_data_string_valid(chgValue):
+                        myPopupInformationBox(jif,"ERROR: value %s is NOT valid!" %chgValue,"CHANGE IN %s" %(theObject),JOptionPane.ERROR_MESSAGE)
+                        continue    # back to ADVANCED Options menu
+
+                confAction = ""
+                if lDel:
+                    if isinstance(value, basestring) and value.count('\n') > 10:
+                        confAction = "%s key: %s (old value to long to display)" %(text, selectedKey)
+                    else:
+                        confAction = "%s key: %s (with old value: %s)" %(text, selectedKey, value)
+                if lChg:
+                    confAction = "%s key: %s to new value: %s" %(text, selectedKey, chgValue)
+
+                if confirm_backup_confirm_disclaimer(jif, "%s VALUE IN %s" %(text, theObject), confAction):
+
+                    if lDel:
+                        theObject.setParameter(selectedKey,None)                                                        # noqa
+
+                    if lChg:
+                        theObject.setParameter(selectedKey,chgValue)                                                    # noqa
+
+                    if isinstance(theObject, SplitTxn):                                                                 # noqa
+                        theObject.getParentTxn().syncItem()                                                             # noqa
+                    else:
+                        theObject.syncItem()                                                                            # noqa
+
+                    MD_REF.savePreferences()            # Flush all in memory settings to config.dict file on disk
+                    play_the_money_sound()
+
+                    if lDel:
+                        if isinstance(value, basestring) and value.count('\n') > 10:
+                            txt = "Parameter: %s DELETED from %s (old value to long to display) @@" %(selectedKey, theObject)
+                            _msgTxt = "SUCCESS: Parameter: %s DELETED from %s (old value to long to display)" %(selectedKey, theObject)
+                        else:
+                            txt = "Parameter: %s DELETED from %s (old value: %s) @@" %(selectedKey, theObject, value)
+                            _msgTxt = "SUCCESS: Parameter: %s DELETED from %s (old value: %s)" %(selectedKey, theObject, value)
+                        myPrint("B", txt)
+                        logToolboxUpdates("advanced_options_edit_parameter_keys", txt)
+
+                        myPopupInformationBox(jif, _msgTxt, "DELETE IN %s" %(theObject), JOptionPane.WARNING_MESSAGE)
+
+                    if lChg:
+                        txt = "Parameter: %s CHANGED to %s in %s @@" %(selectedKey, chgValue, theObject)
+                        myPrint("B", txt)
+                        logToolboxUpdates("advanced_options_edit_parameter_keys", txt)
+                        myPopupInformationBox(jif,
+                                              "SUCCESS: Parameter: %s CHANGED to %s in %s" %(selectedKey, chgValue, theObject),
+                                              "CHANGE IN %s" %(theObject),
+                                              JOptionPane.WARNING_MESSAGE)
+                    jif.dispose()       # already within the EDT
+                    continue
+
+                jif.dispose()       # already within the EDT
+                continue
+
+    def fix_account_start_dates(): return validate_account_start_dates(fix=True)
+
+    def validate_account_start_dates(fix=False):
+        if MD_REF.getCurrentAccountBook() is None: return
+
+        if fix:
+            _THIS_METHOD_NAME = "FIX: Fix Account 'start dates'..."
+        else:
+            _THIS_METHOD_NAME = "DIAG: Validate Account 'Start Dates'..."
+
+        if fix:
+            if not confirm_backup_confirm_disclaimer(toolbox_frame_, _THIS_METHOD_NAME.upper(), "Fix/repair all invalid account start dates?"):
+                return False
+
+        output = "\n" \
+                 "%s:\n" \
+                 " ======================================================\n\n" %(_THIS_METHOD_NAME.upper())
+        if fix:
+            output += "Fixes accounts where there is an invalid 'Start Date' (that is not newer than the earliest transactional date)...\n\n\n"
+        else:
+            output += "Validates that accounts have a valid 'Start Date' that is not newer than the earliest transactional date...\n\n\n"
+
+        output += "%s %s %s %s\n" %(pad("Account Name",50),
+                                    pad("Account Type",20),
+                                    pad("Start Date",17),
+                                    pad("Earliest txn date",17))
+
+        output += "%s %s %s %s\n" %("-"*50,
+                                    "-"*20,
+                                    "-"*17,
+                                    "-"*17)
+        output += "\n"
+
+        book = MD_REF.getCurrentAccountBook()
+        dateFormatter = MD_REF.getPreferences().getShortDateFormatter()
+        creationMap = LinkedHashMap()
+        allAccts = AccountUtil.allMatchesForSearch(book, AcctFilter.ALL_ACCOUNTS_FILTER)
+        Collections.sort(allAccts, AccountUtil.ACCOUNT_TYPE_NAME_CASE_INSENSITIVE_COMPARATOR)
+        for acct in allAccts:
+            if acct.getAccountType() == Account.AccountType.ROOT: continue
+            creationDate = acct.getCreationDateInt()
+            startBal = acct.getStartBalance()
+            creationMap.put(acct, [creationDate, startBal, 0L])
+
+        allTxns = book.getTransactionSet().getAllTxns()
+        for txn in allTxns:
+            txnDate = txn.getDateInt()
+            values = creationMap.get(txn.getAccount())
+            earliestTxnDate = values[2]                                                                                 # noqa
+            if earliestTxnDate == 0 or txnDate <= earliestTxnDate:
+                values[2] = txnDate                                                                                     # noqa
+
+        todayInt = DateUtil.getStrippedDateInt()
+
+        countInvalid = 0
+        countRepaired = 0
+        countNotRepaired = 0
+        for acct in creationMap:
+            if acct.getAccountType().isCategory(): continue
+            if acct.getAccountType() == Account.AccountType.SECURITY: continue
+            values = creationMap.get(acct)
+            creationDate = values[0]                                                                                    # noqa
+            earliestTxnDate = values[2]                                                                                 # noqa
+
+            lFutureDate = (creationDate > todayInt)
+            lZeroDate = (creationDate == 0)
+            if lFutureDate and earliestTxnDate > 0 and earliestTxnDate <= todayInt: pass    # make future dated invalid
+            if lFutureDate: pass                                                            # make future dated invalid
+            elif not lZeroDate and earliestTxnDate == 0: continue                           # assume OK
+            elif lZeroDate: pass                                                            # zero date is invalid/illogical
+            elif earliestTxnDate == 0: continue                                             # assume OK
+            elif earliestTxnDate >= creationDate: continue                                  # assume OK
+            else: pass                                                                      # anything else is invalid
+
+            if earliestTxnDate != 0: lZeroDate = False
+            if earliestTxnDate > 0 and earliestTxnDate <= todayInt: lFutureDate = False
+
+            countInvalid += 1
+            status = "<%s NOT FIXED - ATTENTION NEEDED>" %("*FUTURE-DATE*" if (lFutureDate) else "*ZERO-DATE*  ") if (lFutureDate or lZeroDate) else "<FIXED>" if fix else "<INVALID>"
+            output += "%s %s %s %s %s\n" % (pad(acct.getFullAccountName(), 50),
+                                            pad(str(acct.getAccountType()), 20),
+                                            pad(dateFormatter.format(creationDate), 17),
+                                            pad(dateFormatter.format(earliestTxnDate), 17),
+                                            status)
+            if fix:
+                if lZeroDate or lFutureDate:
+                    countNotRepaired += 1                           # we cannot fix these... manual attention needed
+                else:
+                    countRepaired += 1
+                    acct.setCreationDateInt(earliestTxnDate)
+                    acct.syncItem()
+
+        if countInvalid < 1: output += "<NO INVALID ACCOUNT 'START DATES' FOUND>\n"
+
+        output += "\n<END>"
+
+        if fix: txt = "%s: - Displaying Account 'Start Date' fix report..." %(_THIS_METHOD_NAME)
+        else: txt = "%s: - Displaying Account 'Start Date' validation report..." %(_THIS_METHOD_NAME)
+
+        setDisplayStatus(txt, "B")
+        jif = QuickJFrame(_THIS_METHOD_NAME.upper(), output,copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB, lWrapText=False, lAutoSize=True).show_the_frame()
+        if fix:
+            logToolboxUpdates("validate_account_start_dates", txt)
+            myPopupInformationBox(jif, "%s accounts with invalid 'start dates' %s repaired (%s NOT repaired)" %(countInvalid, countRepaired, countNotRepaired), theMessageType=JOptionPane.WARNING_MESSAGE)
+
+    def reset_all_inbuilt_report_params_defaults():
+        if MD_REF.getCurrentAccountBook() is None: return
+
+        _THIS_METHOD_NAME = "FIX: RESET all inbuilt report/graph parameters to defaults"
+
+        if not myPopupAskQuestion(toolbox_frame_, theQuestion="Do you want to RESET all inbuilt report/graph parameters to defaults?", theTitle=_THIS_METHOD_NAME):
+            txt = "%s: User decided not to erase all inbuilt report/graph parameters - no changes made.." %(_THIS_METHOD_NAME)
+            setDisplayStatus(txt, "B")
+            return
+
+        if not confirm_backup_confirm_disclaimer(toolbox_frame_, _THIS_METHOD_NAME.upper(), "RESET all inbuilt report/graph parameters?"):
+            return False
+
+        ls = MD_REF.getCurrentAccountBook().getLocalStorage()
+        erasedKeys = {}
+        for key in sorted(ls.keys()):
+            value = ls.getStr(key, None)
+            if (value is not None and key.startswith("report_params.")):
+                erasedKeys[key] = value
+                ls.put(key, None)
+                myPrint("B", "ERASED inbuilt report/graph key: '%s' value: '%s'" %(key, value))
+
+        txt = "%s: %s inbuilt report/graph parameter settings erased (review console for details)" %(_THIS_METHOD_NAME, len(erasedKeys))
+        setDisplayStatus(txt, "B")
+        logToolboxUpdates("reset_all_inbuilt_report_params_defaults", txt)
+        myPopupInformationBox(toolbox_frame_, txt, theMessageType=JOptionPane.WARNING_MESSAGE)
+
+    def delete_all_memorized_reports():
+        if MD_REF.getCurrentAccountBook() is None: return
+
+        _THIS_METHOD_NAME = "FIX: DELETE all memorized reports/graphs"
+
+        allMemGraphsReports = getMemorizedReports(True, False, None, True)                                              # type: [ReportSpec]
+        allMemGraphs = getMemorizedReports(True, False, ReportSpec.Type.GRAPH, True)                                    # type: [ReportSpec]
+        allMemReports = getMemorizedReports(True, False, ReportSpec.Type.TEXT, True)                                    # type: [ReportSpec]
+
+        if (len(allMemReports) + len(allMemGraphs)) != len(allMemGraphsReports):
+            raise Exception("LOGIC ERROR: delete_all_memorized_reports() - memorized reports(%s) + graphs(%s) != all(%s)!?" %(len(allMemReports), len(allMemGraphs), len(allMemGraphsReports)))
+
+        if not myPopupAskQuestion(toolbox_frame_, theQuestion="Do you want to DELETE all %s memorized reports(%s) and graphs(%s)?" %(len(allMemGraphsReports), len(allMemReports), len(allMemGraphs)), theTitle=_THIS_METHOD_NAME):
+            txt = "%s: User decided not to delete all %s memorized reports/graphs - no changes made.." %(_THIS_METHOD_NAME, len(allMemGraphsReports))
+            setDisplayStatus(txt, "B")
+            return
+
+        if not confirm_backup_confirm_disclaimer(toolbox_frame_, _THIS_METHOD_NAME.upper(), "DELETE all %s memorized reports/graphs?" %(len(allMemGraphsReports))):
+            return False
+
+        for reportSpec in allMemGraphsReports:
+            if not reportSpec.isMemorized(): raise Exception("LOGIC ERROR: ReportSpec: '%s' is NOT memorized!?" %(reportSpec))
+            reportSpec.deleteItem()
+            myPrint("B", "DELETED Memorized Graph/Report: '%s'" %(reportSpec))
+
+        txt = "%s: %s memorized reports(%s) and graphs(%s) deleted (review console for details)" %(_THIS_METHOD_NAME, len(allMemGraphsReports), len(allMemReports), len(allMemGraphs))
+        setDisplayStatus(txt, "B")
+        logToolboxUpdates("delete_all_memorized_reports", txt)
+        myPopupInformationBox(toolbox_frame_, txt, theMessageType=JOptionPane.WARNING_MESSAGE)
+
+    def view_inactiveAcctsIncludedNW():
+        return fix_inactiveAcctsIncludedNW(lFix=False)
+
+    def fix_inactiveAcctsIncludedNW(lFix=False):
+        if MD_REF.getCurrentAccountBook() is None: return
+        if not isNetWorthUpgradedBuild(): return
+
+        if lFix:
+            from com.infinitekind.moneydance.model import UndoableChange    # should be OK as we have confirmed we are in MD2024.x onwards
+            undo = MD_REF.getUI().getUndoManager()
+            if undo is None: raise Exception("LOGIC ERROR: could not get Undo Manager?!")
+            _THIS_METHOD_NAME = "FIX: Exclude all inactive accounts from Net Worth calculations"
+        else:
+            undo = None
+            _THIS_METHOD_NAME = "DIAG: Show inactive accounts included in Net Worth calculations"
+
+        output = "\n" \
+                 "%s:\n" \
+                 " ======================================================\n\n" %(_THIS_METHOD_NAME.upper())
+
+        book = MD_REF.getCurrentAccountBook()
+        base = MD_REF.getCurrentAccountBook().getCurrencies().getBaseType()
+        dec = MD_REF.getPreferences().getDecimalChar()
+        today = DateUtil.getStrippedDateInt()
+
+        output += "Listing inactive accounts included in Net Worth calculations (Base currency: %s %s)\n\n" %(base.getIDString(), base.getName())
+
+        allAccts = sorted(AccountUtil.allMatchesForSearch(book, AcctFilter.ALL_ACCOUNTS_FILTER),
+                          key=lambda sort_x: (sort_x.getAccountType(), sort_x.getFullAccountName().upper()))
+
+        totalBalance = 0L
+        totalCurrentBalance = 0L
+        accountsToFix = []
+        for acct in allAccts:
+            if not acct.isAccountNetWorthEligible(): continue       # only select NW eligible accounts
+            if not acct.getAccountOrParentIsInactive(): continue    # only select INACTIVE accounts
+            if not acct.getIncludeInNetWorth(): continue            # only select accounts still included in NW
+            balance = CurrencyUtil.convertValue(acct.getBalance(), acct.getCurrencyType(), base)
+            currentBalance = CurrencyUtil.convertValue(acct.getCurrentBalance(), acct.getCurrencyType(), base, today)
+            totalBalance += balance
+            totalCurrentBalance += currentBalance
+            output += ("Type: %s Account: '%s' Current Balance: %s Balance: %s\n"
+                       %(pad(acct.getAccountType(), 12), padTruncateWithDots(acct.getFullAccountName(), 80),
+                         rpad(base.formatFancy(currentBalance, dec), 14), rpad(base.formatFancy(balance, dec), 14)))
+            accountsToFix.append(acct)
+
+        output += "\n%s Totals: Current Balance: %s Balance: %s\n" %((" "*102), rpad(base.formatFancy(totalCurrentBalance, dec), 14), rpad(base.formatFancy(totalBalance, dec), 14))
+        output += "\n<END>"
+
+        txt = "%s: - Displaying inactive accounts included in Net Worth calculations" %(_THIS_METHOD_NAME)
+        setDisplayStatus(txt, "B")
+        jif = QuickJFrame(_THIS_METHOD_NAME.upper(), output,copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB, lWrapText=False, lAutoSize=True).show_the_frame()
+        if not lFix: return
+
+        if len(accountsToFix) < 1:
+            txt = "%s: No accounts found to fix/exclude - no changes made" %(_THIS_METHOD_NAME)
+            setDisplayStatus(txt, "R")
+            myPopupInformationBox(jif, txt, theMessageType=JOptionPane.WARNING_MESSAGE)
+            return
+
+        if not confirm_backup_confirm_disclaimer(jif, _THIS_METHOD_NAME, "Exclude %s accounts from Net Worth calculations?" %(len(accountsToFix))):
+            txt = "%s: User did not agree to proceed with changes - no changes made!" %(_THIS_METHOD_NAME)
+            setDisplayStatus(txt, "R"); myPrint("B", txt)
+            myPopupInformationBox(jif, txt, _THIS_METHOD_NAME, JOptionPane.WARNING_MESSAGE)
+            return
+
+        myPrint("B", "BEGIN: Excluding accounts from Net Worth calculations...:")
+        change = UndoableChange()                                                                                       # noqa
+        for acct in accountsToFix:
+            change.beginModification(acct)
+            acct.setIncludeInNetWorth(False)
+            change.finishModification(acct)
+            myPrint("B", "excluded account '%s' from Net Worth" %(acct))
+        undo.recordChange(change)
+        myPrint("B", "FINISHED: Excluded %s accounts from Net Worth calculations - UNDO HAS BEEN ENABLED" %(len(accountsToFix)))
+
+        txt = "%s: Excluded %s accounts from Net Worth calculations ** UNDO ENABLED **" %(_THIS_METHOD_NAME, len(accountsToFix))
+        setDisplayStatus(txt, "B")
+        logToolboxUpdates("fix_inactiveAcctsIncludedNW", txt)
+        myPopupInformationBox(jif, txt, theMessageType=JOptionPane.WARNING_MESSAGE)
+
+
+    def view_networthCalculations():
+        if MD_REF.getCurrentAccountBook() is None: return
+        if not isNetWorthUpgradedBuild(): return
+
+        if SwingUtilities.isEventDispatchThread():
+            myPrint("DB", "Pushing view_networthCalculations() off the EDT for NetWorthCalculator....")
+            genericThreadRunner(True, view_networthCalculations)
+            return
+
+        from com.infinitekind.moneydance.model import NetWorthCalculator
+
+        _THIS_METHOD_NAME = "View all possible system generated NetWorth calculations"
+
+        output = "\n" \
+                 "%s:\n" \
+                 " ======================================================\n\n" %(_THIS_METHOD_NAME.upper())
+
+        book = MD_REF.getCurrentAccountBook()
+        base = MD_REF.getCurrentAccountBook().getCurrencies().getBaseType()
+        dec = MD_REF.getPreferences().getDecimalChar()
+
+        output += "Base currency: %s %s\n\n" %(base.getIDString(), base.getName())
+
+        for balType in [Account.BalanceType.CURRENT, Account.BalanceType.NORMAL]:
+            for ignoreFlag in [True, False]:
+                nwCalculator = NetWorthCalculator(book, base)
+                nwCalculator.setBalanceType(balType)
+                nwCalculator.setIgnoreAccountSpecificNetWorthFlags(ignoreFlag)                                          # noqa
+                netWorth = nwCalculator.calculateTotal()
+                output += ("BalanceType: %s ignoreAccountSpecificNetWorthFlags: %s NW Calculation: %s  \n"
+                           %(pad("Current" if balType == Account.BalanceType.CURRENT else "Balance/Future", 15),
+                             pad(str(ignoreFlag), 6),
+                             rpad(base.formatFancy(netWorth.getAmount(), dec),20)))
+
+
+        output += "\n\n"
+
+        countExcluded = 0
+        output += "Accounts with specific Net Worth exclusion flag set:\n"
+        output += "----------------------------------------------------\n"
+        for acct in AccountUtil.allMatchesForSearch(book, AcctFilter.ALL_ACCOUNTS_FILTER):
+            if acct.isAccountNetWorthEligible() and not acct.getIncludeInNetWorth():
+                countExcluded += 1
+                output += "AcctType: %s Account: '%s'\n" %(pad(str(acct.getAccountType()), 20), acct.getFullAccountName())
+        if (countExcluded < 1): output += "<none>\n"
+        output += "----------------------------------------------------\n"
+
+        output += "\n<END>"
+
+        txt = "%s: Displaying NetWorth Settings" %(_THIS_METHOD_NAME)
+        setDisplayStatus(txt, "B")
+        QuickJFrame(_THIS_METHOD_NAME.upper(), output, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB, lWrapText=False, lAutoSize=True).show_the_frame()
+
+    def view_shouldBeIncludedInNetWorth_settings():
+        if MD_REF.getCurrentAccountBook() is None: return
+
+        _THIS_METHOD_NAME = "View Accounts' shouldBeIncludedInNetWorth() settings"
+
+        output = "\n" \
+                 "%s:\n" \
+                 " ======================================================\n\n" %(_THIS_METHOD_NAME.upper())
+
+        if not isNetWorthUpgradedBuild():
+            output += "Prior to MD2024.3(5204) Moneydance predefined rules to include/exclude Accounts in both the Summary Page NetWorthView widget, & also the Titlebar's dashboard NW graph\n" \
+                      "- exclude when the account or its Parent is Inactive\n" \
+                      "- exclude the ROOT account and Income/Expense Categories\n" \
+                      "- Then it checks for a hidden account setting (you can set this in Toolbox Update Mode)\n" \
+                      "- You cannot force include an account into the rules, you can only force exclude accounts....\n" \
+                      "\n" \
+                      "Other NetWorth rules for information:\n" \
+                      "- NW Reports / Graphs are based on transactions up to the date you specify; uses Price history data for balance valuations\n" \
+                      "- The Top title bar / dashboard NW Graph's cutoff date can be changed: 'All Dates' includes future Balances; uses Price history data for balance valuations\n" \
+                      "- The Summary Screen's NW widget total ALWAYS uses Current Balance(s) - so future balances are excluded; uses Current Price\n" \
+                      "NOTE: In MD2024.3(5204) all the calculations were aligned, and you have more user-control over the settings...\n\n"
+        else:
+            output += "From MD2024.3(5204) onwards all the Networth calculations and rules were aligned. You also have more inbuilt control over the settings...\n" \
+                      "- ROOT and Income/Expense Categories are always excluded\n" \
+                      "- You can exclude certain accounts from the calculations using Tools/Accounts and change the 'include in NW' setting'\n" \
+                      "\n" \
+                      "Other NetWorth rules for information:\n" \
+                      "- right-click the dashboard and summary page widgets for settings" \
+                      "- in the NW Graph and Reports you can toggle the 'include all accounts' flag to override and ignore the 'include in NW' setting\n" \
+                      "- any end date that is today or future will always value using the current price field\n" \
+                      "\n\n"
+
+        output += "%s %s %s %s\n" %(pad("Account Name",50),
+                                    pad("Account Type",20),
+                                    pad("shouldBeIncludedInNetWorth()",30),
+                                    pad("Override Setting",20))
+
+        output += "%s %s %s %s\n" %("-"*50,
+                                    "-"*20,
+                                    "-"*30,
+                                    "-"*20)
+
+        output += "\n"
+
+        allAccounts = AccountUtil.allMatchesForSearch(MD_REF.getCurrentAccountBook(), MyAcctFilter(25))
+        allAccounts = sorted(allAccounts, key=lambda x: (x.getAccountType(), x.getFullAccountName().upper()))
+
+        # the method shouldBeIncludedInNetWorth() was removed in MD2024.3(5204) and subsumed into the (getter/setter) property includeInNetWorth...
+        for acct in allAccounts:
+            if isNetWorthUpgradedBuild():
+                if not acct.isAccountNetWorthEligible(): continue
+            else:
+                if acct.getAccountType() == Account.AccountType.INCOME or acct.getAccountType() == Account.AccountType.EXPENSE or acct.getAccountType() == Account.AccountType.ROOT:
+                    continue
+
+            output += "%s %s %s %s\n" %(pad(acct.getFullAccountName(),50),
+                                        pad(str(acct.getAccountType()),20),
+                                        pad(str(acct.shouldBeIncludedInNetWorth() if (not isNetWorthUpgradedBuild()) else acct.getIncludeInNetWorth()),30),
+                                        ("-" if (not acct.getParameter(GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, None)) else (str(acct.getBooleanParameter(GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, True)))))
+        output += "\n<END>"
+
+        txt = "%s: Displaying NetWorth Settings" %(_THIS_METHOD_NAME)
+        setDisplayStatus(txt, "B")
+        QuickJFrame(_THIS_METHOD_NAME.upper(), output, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB, lWrapText=False, lAutoSize=True).show_the_frame()
+
+    def edit_shouldBeIncludedInNetWorth_settings():
+        if MD_REF.getCurrentAccountBook() is None: return
+        if isNetWorthUpgradedBuild(): return
+
+        _THIS_METHOD_NAME = "EDIT an Account's shouldBeIncludedInNetWorth() setting"
+
+        allAccounts = AccountUtil.allMatchesForSearch(MD_REF.getCurrentAccountBook(), MyAcctFilter(25))
+        allAccounts = sorted(allAccounts, key=lambda x: (x.getAccountType(), x.getFullAccountName().upper()))
+
+        newAccounts = []
+        for acct in allAccounts:
+            if acct.getAccountType() == Account.AccountType.INCOME or acct.getAccountType() == Account.AccountType.EXPENSE or acct.getAccountType() == Account.AccountType.ROOT:
+                continue
+            newAccounts.append(StoreAccountList(acct))
+        del allAccounts
+
+        lPresentedBackupDisclaimer = False
+        iCountChanges = 0
+
+        while True:
+
+            selectedAcct = JOptionPane.showInputDialog(toolbox_frame_,
+                                                       "Select the Acct edit the shouldBeIncludedInNetWorth() setting",
+                                                       _THIS_METHOD_NAME.upper(),
+                                                       JOptionPane.INFORMATION_MESSAGE,
+                                                       getMDIcon(lAlwaysGetIcon=True),
+                                                       newAccounts,
+                                                       None)
+            if not selectedAcct: break
+
+            selectedAcct = selectedAcct.obj       # type: Account                                                       # noqa
+
+            currentNWsettingBool = selectedAcct.getBooleanParameter(GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, True)
+
+            options = ["YES - Include", "NO - Exclude"]
+            if currentNWsettingBool:
+                current = options[0]
+            else:
+                current = options[1]
+
+            selectedIncludeInNW = JOptionPane.showInputDialog(toolbox_frame_,
+                                                       "Select whether to include/exclude this account in the default NW Home Screen Widget & Titlebar Graph",
+                                                       _THIS_METHOD_NAME.upper()+" for: %s" %(selectedAcct.getAccountName()),
+                                                       JOptionPane.WARNING_MESSAGE,
+                                                       getMDIcon(None),
+                                                       options,
+                                                       current)
+            if not selectedIncludeInNW: continue
+
+            if not lPresentedBackupDisclaimer:
+                if not confirm_backup_confirm_disclaimer(toolbox_frame_, _THIS_METHOD_NAME.upper(), "Change 'include in NW' to '%s'?" %(selectedIncludeInNW)):
+                    return
+                lPresentedBackupDisclaimer = True
+
+            if options.index(selectedIncludeInNW) == 0:
+                # Include selected
+                selectedAcct.setParameter(GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, None)
+            else:
+                # Exclude selected
+                selectedAcct.setParameter(GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, False)
+
+            selectedAcct.syncItem()
+            iCountChanges += 1
+
+            txt = "%s: Account: '%s' Parameter: '%s' set to %s" %(_THIS_METHOD_NAME, selectedAcct, GlobalVars.Strings.MD_KEY_PARAM_APPLIES_TO_NW, selectedIncludeInNW)
+            setDisplayStatus(txt, "B"); myPrint("B", txt)
+            logToolboxUpdates("edit_shouldBeIncludedInNetWorth_settings", txt)
+            myPopupInformationBox(toolbox_frame_,txt)
+
+            continue
+
+        if iCountChanges:
+            txt = "%s: Updated the NW setting in %s Account(s)!" %(_THIS_METHOD_NAME, iCountChanges)
+        else:
+            txt = "%s: No Accounts changed" %(_THIS_METHOD_NAME)
+        setDisplayStatus(txt, "R"); myPrint("B", txt)
+        myPopupInformationBox(toolbox_frame_,txt,theMessageType=JOptionPane.WARNING_MESSAGE)
+
+
+    #### Security stock splits - before/after split date price checks....
+
+    # ---- tuning ----
+    EPSILON = 1e-8
+    TOL_ON = 0.05       # 5% tolerance for split-date price vs expected
+    TOL_AFTER = 0.10    # 10% tolerance for first-after price vs expected
+
+    # ---- helpers ----
+    def _rel_close(a, b, tol):
+        # pure relative tolerance in SAME orientation as output (no floor)
+        if a is None or b is None:
+            return False
+        denom = abs(b)
+        if denom < EPSILON:
+            return False
+        return abs(a - b) <= tol * denom
+
+    def _pct_diff(actual, expected):
+        if actual is None or expected is None or abs(expected) < EPSILON: return None
+        return (actual - expected) / expected
+
+    def _fmt_val(v, missingTxt, dec, curr):
+        if isPriceDisplayDecimalsBuild(): return missingTxt if v is None else StringUtils.formatRate(v, dec, curr.getPriceDisplayDecimalPlaces())
+        return missingTxt if v is None else (u"%.6f" %(v))
+
+    def _fmt_pct(delta, missingTxt): return missingTxt if delta is None else (u"%+.2f%%" % (delta * 100.0))
+
+    def format_split_ratio_both(ratio_double, dec, max_den=1000):
+        if ratio_double <= 0.0 or unicode(ratio_double) == u"NaN": return u"?:?", unicode(ratio_double)
+        frac = Fraction(ratio_double).limit_denominator(max_den)
+        if isPriceDisplayDecimalsBuild(): return u"%d for %d" % (frac.numerator, frac.denominator), u"*" + StringUtils.formatRate(ratio_double, dec, 6)
+        return u"%d for %d" % (frac.numerator, frac.denominator), u"*%.6f" % ratio_double
+
+    def _find_on_prev_next(snaps, dates, target):
+        n = len(dates)
+        if n == 0: return None, None, None
+        i = bisect_left(dates, target)
+        on = snaps[i] if i < n and dates[i] == target else None
+        prev = snaps[i-1] if i > 0 else None
+        nxt = snaps[i+1] if (on is not None and i+1 < n) else (snaps[i] if (on is None and i < n) else None)
+        return on, prev, nxt
+
+    def _classify_issue(prev_rate, on_rate, later_exists, disp_on, disp_after, disp_expected):
+        # Returns (warning, action) for failing rows only (OK rows are skipped before calling this)
+        if prev_rate is None:
+            return (u"No before split price found", u"Add a price record before the split date")
+        if on_rate is None:
+            if later_exists and disp_expected is not None and disp_after is not None:
+                if _rel_close(disp_after, disp_expected, TOL_AFTER):
+                    return (u"No split date price found (later price consistent with expected)",
+                            u"Add a price record on the split date")
+                return (u"No split date price found (later price inconsistent with expected)",
+                        u"Add a price record on the split date")
+            return (u"No split date price found", "Add a price record on the split date")
+        if disp_expected is not None and disp_on is not None and not _rel_close(disp_on, disp_expected, TOL_ON):
+            return (u"Split date price found, but expecting different price",
+                    u"Review and correct the split date price record")
+        if (disp_after is not None) and (disp_expected is not None) and (not _rel_close(disp_after, disp_expected, TOL_AFTER)):
+            return (u"After split price inconsistent with expected post split price",
+                    u"Review and correct post-split price records")
+        return (u"", u"")
+
+    # Signed deltas using Moneydance DateUtil (ints YYYYMMDD)
+    def _delta_prev(prevDateInt, splitDateInt):
+        if prevDateInt is None: return u""
+        days = DateUtil.calculateDaysBetween(prevDateInt, splitDateInt)
+        return u"%+d" % (-abs(days))
+
+    def _delta_next(nextDateInt, splitDateInt):
+        if nextDateInt is None: return u""
+        days = DateUtil.calculateDaysBetween(splitDateInt, nextDateInt)
+        return u"%+d" % abs(days)
+
+    # ---- main ----
+    def diag_security_splits_no_price(lAll=False):
+        if MD_REF.getCurrentAccountBook() is None: return
+
+        if lAll:
+            _THIS_METHOD_NAME = u"DIAG: List all security split data (also performs validation)"
+        else:
+            _THIS_METHOD_NAME = u"DIAG: Validate dated price record exists on security split date(s)"
+
+        output = u""
+        output += u"\n%s:\n" % _THIS_METHOD_NAME.upper()
+        output += u" ================================================================\n\n"
+
+        # ---------- two-row headers ----------
+        output += u"%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n" % (
+            pad(u"Security", 60),               # Security
+            pad(u"Split", 10),                  # Split date
+            pad(u"Qty Split", 12),              # Qty Split ratio (text: "X for Y")
+            rpad(u"", 1),                       # ratio arrow
+            rpad(u"Qty Split", 12),             # Qty Split decimal ratio
+            pad(u"Before", 10),                 # Before split - date found
+            pad(u"Before", 6),                  # Before split - days
+            rpad(u"Before", 12),                # Before split - price
+            pad(u"**Split**", 10),              # On split date - date found
+            rpad(u"**Split**", 12),             # On split date - price
+            rpad(u"Est. Price", 12),            # Est. price after split
+            rpad(u"", 1),                       # Est. price arrow
+            rpad(u"calc", 10),                  # Est price delta (post-split price to estimated price)
+            pad(u"Next", 10),                   # Next after - split date
+            pad(u"", 6),                        # Next after - days
+            rpad(u"Next", 12),                  # Next after - price found
+            rpad(u"Next", 10),                  # Next after price % delta
+            pad(u"Warnings", 20)
+        )
+
+        output += u"%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n" % (
+            pad(u"", 60),                  # Security
+            pad(u"Date", 10),              # Split date
+            pad(u"New for Old", 12),       # Qty Split ratio (text: "X for Y")
+            rpad(u"", 1),                  # ratio arrow
+            rpad(u"(dec) Ratio", 12),      # Qty Split decimal ratio
+            pad(u"Split Date", 10),        # Before split - date found
+            pad(u"Days", 6),               # Before split - days
+            rpad(u"Split Price", 12),      # Before split - price
+            pad(u"Date Found", 10),        # On split date - date found
+            rpad(u"Price Found", 12),      # On split date - price
+            rpad(u"Post Split", 12),       # Est. price after split
+            rpad(u"", 1),                  # Est. price arrow
+            rpad(u"Price %\u0394", 10),    # Est price delta (post-split price to estimated price)
+            pad(u"After Date", 10),        # Next after - split date
+            pad(u"Days", 6),               # Next after - days
+            rpad(u"Price Found", 12),      # Next after - price found
+            rpad(u"Price %\u0394", 10),
+            pad(u"Action", 20)
+        )
+
+        # underlines
+        output += u"%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n\n" % (
+            u"-"*60, u"-"*10, u"-"*12, " "*1, u"-"*12, u"-"*10, u"-"*6, u"-"*12, u"-"*10, u"-"*12, u"-"*12, " "*1, u"-"*10, u"-"*10, u"-"*6, u"-"*12, u"-"*10, u"-"*20
+        )
+
+        # gather securities (securities only) and sort by name
+        allSecurities = [s for s in MD_REF.getCurrentAccountBook().getCurrencies().getAllCurrencies()
+                         if s.getCurrencyType() is CurrencyType.Type.SECURITY]
+        allSecurities = sorted(allSecurities, key=lambda x: x.getName().upper())
+
+        sdf = MD_REF.getPreferences().getShortDateFormatter()
+        dec = MD_REF.getPreferences().getDecimalChar()
+
+        countIssues = 0
+        last_sec = None
+        missingTxt = u"<missing>"
+
+        for sec in allSecurities:
+            splits = sec.getSplits()
+            if not splits: continue
+
+            snaps = list(sec.getSnapshots())
+            if not snaps: continue
+
+            dates = [s.getDateInt() for s in snaps]
+
+            emitted_for_this_sec = False
+
+            for split in splits:
+                ratio = split.getSplitRatio()
+                if abs(ratio - 1.0) < EPSILON: continue
+
+                splitDate = split.getDateInt()
+                on_snap, prev_snap, next_snap = _find_on_prev_next(snaps, dates, splitDate)
+
+                beforeSplitDateRate = None if prev_snap is None else prev_snap.getRate()
+                onSplitDateRate = None if on_snap is None else on_snap.getRate()
+                afterSplitDateRate = None if next_snap is None else next_snap.getRate()
+
+                # expected in RAW orientation (unchanged)
+                estSplitDateRate = None if (beforeSplitDateRate is None or ratio <= 0.0) else (beforeSplitDateRate * ratio)
+
+                # ---- compute DISPLAY orientation values once ----
+                disp_before   = None if beforeSplitDateRate is None else safeInvertRate(beforeSplitDateRate)
+                disp_on       = None if onSplitDateRate     is None else safeInvertRate(onSplitDateRate)
+                disp_after    = None if afterSplitDateRate  is None else safeInvertRate(afterSplitDateRate)
+                disp_expected = None if estSplitDateRate    is None else safeInvertRate(estSplitDateRate)
+
+                # strict pass/fail using DISPLAY orientation for consistency with shown %Δ
+                ok = True
+                if beforeSplitDateRate is None: ok = False
+                elif onSplitDateRate is None: ok = False
+                elif disp_expected is None or not _rel_close(disp_on, disp_expected, TOL_ON): ok = False
+                elif (disp_after is not None) and (not _rel_close(disp_after, disp_expected, TOL_AFTER)): ok = False
+
+                if ok and (not lAll): continue
+
+                if ok:
+                    warning, action = u"OK", u""
+                else:
+                    later_exists = next_snap is not None
+                    warning, action = _classify_issue(
+                        beforeSplitDateRate, onSplitDateRate, afterSplitDateRate, estSplitDateRate,
+                        later_exists, disp_on)
+
+                beforeDisp   = _fmt_val(disp_before,   missingTxt, dec, sec)
+                onDisp       = _fmt_val(disp_on,       missingTxt, dec, sec)
+                afterDisp    = _fmt_val(disp_after,    missingTxt, dec, sec)
+                expectedDisp = _fmt_val(disp_expected, missingTxt, dec, sec)
+
+                # %Δ in DISPLAY orientation
+                pct_on    = _pct_diff(disp_on,    disp_expected)
+                pct_after = _pct_diff(disp_after, disp_expected)
+
+                prevDateInt = None if prev_snap is None else prev_snap.getDateInt()
+                onDateInt   = None if on_snap   is None else on_snap.getDateInt()
+                nextDateInt = None if next_snap is None else next_snap.getDateInt()
+
+                prevDateStr = missingTxt if prevDateInt is None else sdf.format(prevDateInt)
+                onDateStr   = missingTxt if onDateInt   is None else sdf.format(onDateInt)
+                nextDateStr = missingTxt if nextDateInt is None else sdf.format(nextDateInt)
+
+                dPrev = _delta_prev(prevDateInt, splitDate)
+                dNext = _delta_next(nextDateInt, splitDate)
+
+                ratio_str, ratio_dec = format_split_ratio_both(ratio, dec)
+
+                if not emitted_for_this_sec:
+                    if last_sec is not None: output += u"\n"
+                    last_sec = sec
+                    emitted_for_this_sec = True
+
+                secNameCol = sec.getName()
+
+                output += u"%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n" % (
+                    padTruncateWithDots(secNameCol, 60),            # Security
+                    pad(sdf.format(splitDate), 10),                 # Qty Split date
+                    pad(ratio_str, 12),                             # Qty Split ratio (text: "X for Y")
+                    pad(u"↓" if (ratio < 1.0) else u"↑", 1),        # ratio arrow
+                    rpad(ratio_dec, 12),                            # Qty Split decimal ratio
+                    pad(prevDateStr, 10),                           # Before split - date found
+                    pad(dPrev, 6),                                  # Before split - days
+                    rpad(beforeDisp, 12),                           # Before split - price
+                    pad(onDateStr, 10),                             # On split date - date found
+                    rpad(onDisp, 12),                               # On split date - price
+                    rpad(expectedDisp, 12),                         # Est. price after split
+                    pad(u"↑" if (ratio < 1.0) else u"↓", 1),        # Est. price arrow
+                    rpad(_fmt_pct(pct_on,   missingTxt), 10),       # Est price delta
+                    pad(nextDateStr, 10),                           # Next after - date
+                    pad(dNext, 6),                                  # Next after - days
+                    rpad(afterDisp, 12),                            # Next after - price
+                    rpad(_fmt_pct(pct_after, missingTxt), 10),      # Next after price % delta
+                    warning + (u" | " + action if action else "")   # warning / action
+                )
+
+                if not ok: countIssues += 1
+
+        output += u"\n<END>"
+
+        # Show frame if issues exist OR lAll=True. Suppress info popup when lAll=True.
+        if lAll or countIssues > 0:
+            if countIssues > 0:
+                txt = "%s: Displaying %s split-date pricing validation issue(s)" % (_THIS_METHOD_NAME, countIssues)
+                setDisplayStatus(txt, "R")
+            else:
+                txt = "%s: Displaying all split data (and validation results)" %(_THIS_METHOD_NAME)
+                setDisplayStatus(txt, "B")
+            jif = QuickJFrame(_THIS_METHOD_NAME.upper(), output, copyToClipboard=GlobalVars.lCopyAllToClipBoard_TB, lWrapText=False, lAutoSize=True).show_the_frame()
+            myPopupInformationBox(jif, txt, theMessageType=JOptionPane.WARNING_MESSAGE)
+
+        else:
+            txt = "%s: - No split-date pricing validation issues detected!" %(_THIS_METHOD_NAME)
+            setDisplayStatus(txt, "B")
+            myPopupInformationBox(toolbox_frame_, txt, theMessageType=JOptionPane.INFORMATION_MESSAGE)
+
+    #### Security stock splits - before/after split date price checks....
 
     class CollectTheGarbage(AbstractAction):
 
